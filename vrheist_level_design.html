@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VR Heist — Level Design: 6 × 6 m Floor Plans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f14; --panel:#151922; --panel2:#1b2030; --line:#2a3142; --text:#e7e9ee; --muted:#9aa3b5;
+  --gold:#e8b04a; --cyan:#4fc3f7; --red:#ff3b4f; --violet:#b388ff; --green:#59d98e;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Space Grotesk',system-ui,sans-serif;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:2.4rem;margin:0 0 6px;letter-spacing:-.02em}
+h2{font-size:1.5rem;margin:56px 0 12px;letter-spacing:-.01em}
+h3{font-size:1.1rem;margin:0 0 6px}
+.kicker{font-family:'IBM Plex Mono',monospace;color:var(--red);font-size:.8rem;letter-spacing:.15em;text-transform:uppercase}
+.lead{color:var(--muted);max-width:820px;font-size:1.05rem}
+.mono{font-family:'IBM Plex Mono',monospace}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.card p{margin:.3em 0;color:var(--muted)}
+.card b{color:var(--text)}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 0}
+nav a{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--text);text-decoration:none;border:1px solid var(--line);padding:6px 10px;border-radius:6px;background:var(--panel)}
+nav a:hover{border-color:var(--gold)}
+.floor{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:22px}
+.floorhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:6px}
+.floorhead .tag{font-family:'IBM Plex Mono',monospace;font-size:.75rem;padding:3px 8px;border-radius:4px;background:var(--panel2);color:var(--muted)}
+.floorbody{display:grid;grid-template-columns:minmax(320px,520px) 1fr;gap:26px;align-items:start}
+@media (max-width:900px){.floorbody{grid-template-columns:1fr}}
+svg.plan{width:100%;height:auto;display:block}
+ol.keys{margin:0;padding:0;list-style:none;counter-reset:none}
+ol.keys li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
+ol.keys li:last-child{border-bottom:none}
+.num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#0d0f14;font-family:'IBM Plex Mono',monospace}
+ol.keys .t{font-weight:500}
+ol.keys .d{color:var(--muted);font-size:.92rem}
+.goal{margin:8px 0 14px;color:var(--muted)}
+.goal b{color:var(--text)}
+.beats{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.beats span{font-size:.8rem;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:3px 10px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:.85rem;color:var(--muted);margin:18px 0 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.legend .ln{display:inline-block;width:22px;height:0;border-top:3px solid;margin-right:6px;vertical-align:3px}
+table{width:100%;border-collapse:collapse;font-size:.93rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+td:first-child{font-weight:500;white-space:nowrap}
+.pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.72rem;padding:1px 7px;border-radius:4px;margin:1px 2px 1px 0;background:var(--panel2);border:1px solid var(--line)}
+a{color:var(--cyan)}
+.note{border-left:3px solid var(--gold);padding:8px 14px;background:rgba(232,176,74,.06);color:var(--muted);border-radius:0 8px 8px 0;margin-top:14px}
+footer{margin-top:60px;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">VR Heist · Level design pass · Anissah &amp; Natalia</div>
+  <h1>Five floors in 36 m²</h1>
+  <p class="lead">To-scale top-down plans for each floor of the heist, all built into the same 6&nbsp;×&nbsp;6&nbsp;m tracked room. The lift sits in the same physical corner on every floor. When it moves, the world changes around the players, so co-location stays intact and no personal teleport is needed.</p>
+  <nav>
+    <a href="#principles">Design rules</a><a href="#stack">Building &amp; pacing</a><a href="#lift">The lift</a>
+    <a href="#b1">B1 Hideout</a><a href="#g">G Laser gallery</a><a href="#f1">1 Treasure hall</a><a href="#f2">2 Vault</a><a href="#roof">R Rooftop</a>
+    <a href="#criteria">Assessment map</a><a href="#assets">Assets</a><a href="#unreal">Unreal notes</a>
+  </nav>
+
+  <h2 id="principles">Design rules for the whole building</h2>
+  <div class="grid2">
+    <div class="card"><h3>1 · One home corner</h3><p>The lift is always the <b>NE 2 × 2 m corner</b>. Players learn it on floor B1 and it becomes their safe zone, the place to regroup, and the point where the experience recalibrates. The lift leaves only once <b>every player</b> is inside it.</p></div>
+    <div class="card"><h3>2 · Respect the real room</h3><p>Virtual outer walls sit on the physical 6 m boundary. Players should never have to stand closer than <b>40 cm</b> to the real wall (the dashed line on the plans). Wall-mounted things such as the fuse box, key switches and keypad sit on consoles or columns that stick out about 40 cm, so nobody lunges into a real wall.</p></div>
+    <div class="card"><h3>3 · Never the same room twice</h3><p>Each floor uses a different layout type: <b>rooms</b> (B1), a <b>loop</b> (G), <b>islands</b> (1), a <b>room inside a room</b> (2) and an <b>open edge</b> (Roof). Players then feel they've moved through a whole building, not reloaded one box.</p></div>
+    <div class="card"><h3>4 · Borrow space you can't walk</h3><p>Every floor has a view out past the boundary: the sewer tunnel, the atrium balcony, the guard corridor window, the depth of the vault, the skyline, and a glass skylight. This is the cheapest way to make 36 m² feel like a museum.</p></div>
+    <div class="card"><h3>5 · Use the vertical axis</h3><p>With leg and hand tracking, height becomes gameplay: <b>step over</b> low lasers, <b>duck</b> under high ones, <b>crouch</b> behind cases to hide, reach high for a painting, look down through glass.</p></div>
+    <div class="card"><h3>6 · Nobody can do it alone</h3><p>Every floor has at least one task that needs two players <b>far apart (≥ 2.5 m) or out of each other's sight</b>. Players have to talk, which is what the multi-user criterion rewards.</p></div>
+    <div class="card"><h3>7 · One alarm meter, carried through</h3><p>A 3-strike alarm meter is shared across every floor. Touching a laser or being seen by a guard adds a strike. It raises the stakes floor by floor and changes the rooftop ending.</p></div>
+    <div class="card"><h3>8 · Optional: one physical anchor prop</h3><p>Ties to the props &amp; trackers lecture. A real <b>60 × 60 × 90 cm plinth</b> stays fixed at (1.8 m, 1.8 m) and is dressed differently on each floor: planning table → sculpture → showcase → prize pedestal → supply crate. Players can actually touch it on every floor.</p></div>
+  </div>
+
+  <h2 id="stack">The building &amp; the tension curve</h2>
+  <div class="floor" style="margin-top:12px">
+    <svg class="plan" viewBox="0 0 1100 380" id="stackSvg" role="img" aria-label="Section view of the building with tension curve"></svg>
+  </div>
+
+  <h2 id="lift">The lift: how you "teleport" without teleporting</h2>
+  <div class="grid2">
+    <div class="card"><h3>Spec</h3><p>2 × 2 m car in the NE corner, with a 1.2 m door on its south face. Inside: a floor panel (only the next floor is lit), a handrail, a floor counter, and the alarm meter. It fits 2–4 players standing.</p></div>
+    <div class="card"><h3>Ride sequence (~8 s)</h3><p>All players are inside the trigger volume → doors close → rumble, hum and a ticking counter → the next floor's sublevel streams in behind closed doors → doors open on a new world. There's no fade to black, because the closed car hides the swap.</p></div>
+    <div class="card"><h3>Why it is legal</h3><p>The brief forbids personal teleport because it breaks co-location. Here <b>nobody moves</b>: the whole level swaps around everyone at once, so every player's real position still matches their virtual one.</p></div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--gold)"></i>Interaction</span>
+    <span><i style="background:var(--cyan)"></i>Co-op (needs 2+)</span>
+    <span><i style="background:var(--red)"></i>Hazard</span>
+    <span><i style="background:var(--violet)"></i>Story / goal</span>
+    <span><span class="ln" style="border-color:#7fdfff"></span>View past the boundary</span>
+    <span><span class="ln" style="border-color:#bff0ff;border-top-width:5px;opacity:.7"></span>Glass window</span>
+    <span><span class="ln" style="border-color:#fff;border-top-style:dotted"></span>Main player route</span>
+    <span class="mono" style="font-size:.78rem">Grid = 1 m · North is up · 0,0 = NW corner</span>
+  </div>
+
+  <div id="floors"></div>
+
+  <h2 id="criteria">How the layout scores against the assessment</h2>
+  <div class="card" style="padding:6px 14px">
+  <table>
+    <tr><th>Criterion</th><th>What in this design delivers it</th></tr>
+    <tr><td>GamePlay</td><td>A five-act heist with a clear goal on each floor, a tension curve that rises to the rooftop escape, and choices with consequences (loot weight, carried alarm strikes, swapping the prize for a matched weight).</td></tr>
+    <tr><td>Interactions</td><td>
+      <span class="pill">button</span><span class="pill">lever</span><span class="pill">grab</span><span class="pill">pinch</span><span class="pill">holster</span><span class="pill">two-hand lid</span><span class="pill">drawer</span><span class="pill">cut gesture</span><span class="pill">mirror aim</span><span class="pill">pressure plate</span><span class="pill">dial</span><span class="pill">key turn</span><span class="pill">hold barricade</span><span class="pill">aim launcher</span><span class="pill">palm scan</span> — 15 types, each taught or introduced at a safe moment.</td></tr>
+    <tr><td>Use of Space</td><td>A fixed lift home corner, five different layout types, views past every boundary, vertical play (step, duck, crouch, reach, look down), and a level-swapping lift that keeps co-location.</td></tr>
+    <tr><td>Multi-user</td><td>Split-information puzzles (fuse box, dial terminal), relay crossing on pressure plates, two-person carry, simultaneous key turn, one player holding the door while the others rig the zipline, and a group zipline grab.</td></tr>
+    <tr><td>World Design</td><td>Each floor has its own mood: damp sewer hideout → marble gallery in moonlight → gold-lit treasure hall → cold steel vault → windy rooftop with the city skyline. The Unreal notes below cover sound and lighting per floor.</td></tr>
+    <tr><td>Usability</td><td>B1 teaches every core verb before it matters, in a safe place with a mirror for checking your body. The same lift and panel on every floor; only the next floor's button is lit; hazards are always red; co-op objects are always cyan-edged.</td></tr>
+    <tr><td>Algorithmic complexity</td><td>Replicated lift state machine with an all-players-inside check, level streaming, laser reflection with line traces, a moving laser driven by pressure plates, gesture recognition for cutting, a weight-based loot system, a guard vision cone, synchronised key turns, and an alarm meter that persists across floors.</td></tr>
+  </table>
+  </div>
+
+  <h2 id="assets">Your Sketchfab finds → where they go</h2>
+  <div class="card" style="padding:6px 14px">
+  <table>
+    <tr><th>Asset</th><th>Use it on</th><th>Notes</th></tr>
+    <tr><td><a href="https://sketchfab.com/3d-models/showcases-asset-pack-d039c79e436d4473a48725bc997be402">Showcases asset pack</a></td><td>1 Treasure hall</td><td>Jewellery cases W1/W2, centre case, coin cabinet. Probably your most useful find.</td></tr>
+    <tr><td><a href="https://sketchfab.com/3d-models/museum-showcase-348a94fabe6f42d5b4404eb19b71b35d">Museum showcase</a></td><td>1 Treasure hall, 2 Vault</td><td>Centre egg case; the prize case in the vault.</td></tr>
+    <tr><td><a href="https://sketchfab.com/3d-models/fancy-picture-frame-02-4k-da2233e783d747ae8a87d52358e46465">Fancy picture frame 02</a></td><td>G Laser gallery, 1 Treasure hall</td><td>Paintings on the partition walls and the stealable painting. It's a 4K asset, so lower the texture resolution for the Pico.</td></tr>
+    <tr><td><a href="https://sketchfab.com/3d-models/museum-interior-ee87877d9afe4e4ea3bbec67f2445972">Museum interior (1)</a> / <a href="https://sketchfab.com/3d-models/museum-interior-8d2f994817d04df0b80eff0c9d8dd8d9">(2)</a></td><td>G, 1</td><td>Take wall, floor and column pieces rather than the whole room. The room has to match your 6 × 6 m grid, not the asset's own size.</td></tr>
+    <tr><td><a href="https://sketchfab.com/3d-models/art-museum-f61d398210c04f41a12f109e4fadfd5e">Art museum</a> / <a href="https://sketchfab.com/3d-models/art-museum-vr-f5b9e253337d44ccbca966e9ed19f6f2">Art museum VR</a></td><td>G atrium view</td><td>Good as the non-walkable atrium seen from the balcony, where distant detail can be low-poly.</td></tr>
+    <tr><td><a href="https://sketchfab.com/3d-models/speed-art-museum-fashioning-madame-adelaide-2d65cec24815458f997731919b48fdff">Speed Art Museum scan</a></td><td>G hero exhibit</td><td>A scan works as a single hero piece. Scans are usually heavy, so decimate it before using it on the headset.</td></tr>
+  </table>
+  <p class="note" style="margin:10px 0 8px">Still missing: <b>lift car and doors</b>, <b>vault door</b>, <b>hideout props</b> (crates, fuse box, sewer pipes), <b>rooftop kit</b> (AC units, parapet, skyline cards) and <b>loot items</b> (vase, statue, egg, crown). Lasers are best built procedurally from your existing BP_Laser. Before importing anything, check each model's licence (most Sketchfab downloads need CC-BY credit) and its triangle count against the Pico 4 Ultra budget.</p>
+  </div>
+
+  <h2 id="unreal">Unreal implementation notes</h2>
+  <div class="grid2">
+    <div class="card"><h3>Level structure</h3><p><b>L_Heist_Persistent</b> holds the lift, players, GameState (alarm meter, loot score, code fragments) and the anchor plinth. Streaming sublevels: <span class="mono">L_B1_Hideout · L_G_Lasers · L_1_Treasure · L_2_Vault · L_R_Roof</span>. The lift loads the next sublevel and unloads the old one while its doors are shut.</p></div>
+    <div class="card"><h3>Reuse what's already in L_Heist1</h3><p><b>BP_Laser</b> → every beam (extend it with a reflection trace for the mirror). <b>BP_SquareButton</b> → lift panel, big button, palm scanner. <b>BP_Counter</b> → loot score and countdown. <b>BP_GrabPickupBase / PinchPickupBase</b> → loot, tools, mirror. <b>BP_LobbySessionSelector</b> → stays in the AR staging area.</p></div>
+    <div class="card"><h3>Server authority</h3><p>The lift trigger, pressure plates, key-turn timing and alarm meter all run on the server and replicate out. A two-player check (two keys turned within 0.5 s, or two different players' palms on the scanner) must compare player IDs, not just count hands.</p></div>
+    <div class="card"><h3>Optional 3 × 6 m staging area</h3><p>Use the extra AR strip as <b>the crew van</b>: players put on headsets, join the session, see each other in passthrough, then walk into the 6 × 6 room and spawn on the B1 onboarding pad.</p></div>
+  </div>
+
+  <footer>Plans are drawn 1 m = 1 grid square. Coordinates are in metres from the NW corner. Adjust the lift corner to match the real lab's door and guardian setup.</footer>
+</div>
+
+<script>
+const S = 66, M = 34, W = 6*S + 2*M;
+const C = {int:'#e8b04a', coop:'#4fc3f7', haz:'#ff3b4f', story:'#b388ff'};
+const px = v => M + v*S;
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+
+function plan(f){
+  let o = `<svg class="plan" viewBox="0 0 ${W} ${W+18}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(f.name)} top-down plan">`;
+  o += `<defs>
+    <pattern id="hatch-${f.id}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#ff3b4f" stroke-opacity=".35" stroke-width="3"/></pattern>
+    <marker id="arr-${f.id}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fff"/></marker>
+    <marker id="arrc-${f.id}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4fc3f7"/></marker>
+    <marker id="arrr-${f.id}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ff3b4f"/></marker>
+  </defs>`;
+  // floor
+  o += `<rect x="${px(0)}" y="${px(0)}" width="${6*S}" height="${6*S}" fill="${f.floor}" />`;
+  // grid
+  for(let i=1;i<6;i++){
+    o += `<line x1="${px(i)}" y1="${px(0)}" x2="${px(i)}" y2="${px(6)}" stroke="#ffffff" stroke-opacity=".06"/>`;
+    o += `<line x1="${px(0)}" y1="${px(i)}" x2="${px(6)}" y2="${px(i)}" stroke="#ffffff" stroke-opacity=".06"/>`;
+  }
+  // zones
+  (f.zones||[]).forEach(z=>{
+    o += `<rect x="${px(z.x)}" y="${px(z.y)}" width="${z.w*S}" height="${z.h*S}" fill="${z.fill}" ${z.stroke?`stroke="${z.stroke}" stroke-dasharray="4 4"`:''} rx="2"/>`;
+    if(z.label){
+      const lx = z.lx!==undefined?z.lx:z.x+0.12, ly = z.ly!==undefined?z.ly:z.y+0.28;
+      o += `<text x="${px(lx)}" y="${px(ly)}" fill="${z.tc||'#cfd5e3'}" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing=".08em" opacity=".9">${esc(z.label)}</text>`;
+    }
+  });
+  // hatch areas (laser zones)
+  (f.hatch||[]).forEach(z=>{
+    o += `<rect x="${px(z.x)}" y="${px(z.y)}" width="${z.w*S}" height="${z.h*S}" fill="url(#hatch-${f.id})"/>`;
+  });
+  // polys (light cones etc.)
+  (f.polys||[]).forEach(p=>{
+    o += `<polygon points="${p.pts.map(q=>px(q[0])+','+px(q[1])).join(' ')}" fill="${p.fill}" ${p.stroke?`stroke="${p.stroke}"`:''}/>`;
+    if(p.label) o += `<text x="${px(p.lx)}" y="${px(p.ly)}" fill="${p.tc||'#f6e7a8'}" font-family="IBM Plex Mono, monospace" font-size="9.5" opacity=".95">${esc(p.label)}</text>`;
+  });
+  // objects (cases, furniture)
+  (f.objs||[]).forEach(b=>{
+    o += `<rect x="${px(b.x)}" y="${px(b.y)}" width="${b.w*S}" height="${b.h*S}" fill="${b.fill||'#3a4256'}" stroke="${b.stroke||'#6b7690'}" stroke-width="1" rx="${b.r||2}"/>`;
+    if(b.label) o += `<text x="${px(b.x+b.w/2)}" y="${px(b.y+b.h/2)+3}" fill="#dfe4ee" font-family="IBM Plex Mono, monospace" font-size="8.5" text-anchor="middle">${esc(b.label)}</text>`;
+  });
+  // walls
+  (f.walls||[]).forEach(b=>{
+    o += `<rect x="${px(b.x)}" y="${px(b.y)}" width="${b.w*S}" height="${b.h*S}" fill="#5b6378" stroke="#8a93aa" stroke-width="1"/>`;
+    if(b.label) o += `<text x="${px(b.lx)}" y="${px(b.ly)}" fill="#cfd5e3" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="${b.anchor||'start'}">${esc(b.label)}</text>`;
+  });
+  // glass windows
+  (f.windows||[]).forEach(b=>{
+    o += `<rect x="${px(b.x)}" y="${px(b.y)}" width="${b.w*S}" height="${b.h*S}" fill="#7fdfff" fill-opacity=".55" stroke="#bff0ff" stroke-width="1"/>`;
+  });
+  // anchor plinth
+  if(f.anchor){
+    o += `<rect x="${px(1.5)}" y="${px(1.5)}" width="${0.6*S}" height="${0.6*S}" fill="#8a6d2b" stroke="#e8b04a" stroke-width="1.5" stroke-dasharray="3 2"/>`;
+    if(f.anchor!==true) o += `<text x="${px(1.8)}" y="${px(2.32)}" fill="#e8c27a" font-family="IBM Plex Mono, monospace" font-size="8.5" text-anchor="middle">${esc(f.anchor)}</text>`;
+  }
+  // vistas
+  (f.vistas||[]).forEach(v=>{
+    o += `<line x1="${px(v.x1)}" y1="${px(v.y1)}" x2="${px(v.x2)}" y2="${px(v.y2)}" stroke="#7fdfff" stroke-width="5" stroke-opacity=".85"/>`;
+    if(v.label){
+      const vt = v.vert ? `transform="rotate(${v.rot||-90} ${px(v.lx)} ${px(v.ly)})"` : '';
+      o += `<text x="${px(v.lx)}" y="${px(v.ly)}" fill="#7fdfff" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="${v.anchor||'middle'}" ${vt}>${esc(v.label)}</text>`;
+    }
+  });
+  // doors (non-lift)
+  (f.doors||[]).forEach(d=>{
+    o += `<line x1="${px(d.x1)}" y1="${px(d.y1)}" x2="${px(d.x2)}" y2="${px(d.y2)}" stroke="#ff9a3c" stroke-width="6"/>`;
+    if(d.label) o += `<text x="${px(d.lx)}" y="${px(d.ly)}" fill="#ffb26b" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="${d.anchor||'middle'}" ${d.rot?`transform="rotate(${d.rot} ${px(d.lx)} ${px(d.ly)})"`:''}>${esc(d.label)}</text>`;
+  });
+  // lasers
+  (f.lasers||[]).forEach(l=>{
+    const dash = l.type==='low' ? '2 4' : l.type==='grid' ? '' : '10 4';
+    const w = l.type==='grid'?2:3;
+    if(l.type==='grid'){
+      for(let k=-2;k<=2;k++){
+        const off = k*0.05, vert = l.x1===l.x2;
+        o += `<line x1="${px(l.x1+(vert?off:0))}" y1="${px(l.y1+(vert?0:off))}" x2="${px(l.x2+(vert?off:0))}" y2="${px(l.y2+(vert?0:off))}" stroke="#ff3b4f" stroke-width="1.6" opacity=".9"/>`;
+      }
+    } else {
+      o += `<line x1="${px(l.x1)}" y1="${px(l.y1)}" x2="${px(l.x2)}" y2="${px(l.y2)}" stroke="#ff3b4f" stroke-width="${w}" stroke-dasharray="${dash}" />`;
+      o += `<line x1="${px(l.x1)}" y1="${px(l.y1)}" x2="${px(l.x2)}" y2="${px(l.y2)}" stroke="#ff3b4f" stroke-width="9" stroke-opacity=".15" />`;
+    }
+    if(l.label) o += `<text x="${px(l.lx)}" y="${px(l.ly)}" fill="#ff8a96" font-family="IBM Plex Mono, monospace" font-size="8.5" text-anchor="${l.anchor||'middle'}">${esc(l.label)}</text>`;
+  });
+  // sweep arrows
+  (f.sweeps||[]).forEach(s=>{
+    o += `<line x1="${px(s.x1)}" y1="${px(s.y)}" x2="${px(s.x2)}" y2="${px(s.y)}" stroke="#ff3b4f" stroke-width="2" marker-start="url(#arrr-${f.id})" marker-end="url(#arrr-${f.id})"/>`;
+    if(s.label) o += `<text x="${px((s.x1+s.x2)/2)}" y="${px(s.y)-6}" fill="#ff8a96" font-family="IBM Plex Mono, monospace" font-size="8.5" text-anchor="middle">${esc(s.label)}</text>`;
+  });
+  // spawns
+  (f.spawns||[]).forEach((s,i)=>{
+    o += `<circle cx="${px(s[0])}" cy="${px(s[1])}" r="${0.22*S}" fill="none" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+    o += `<text x="${px(s[0])}" y="${px(s[1])+3}" fill="#4fc3f7" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle">P${i+1}</text>`;
+  });
+  // links (co-op relationships)
+  (f.links||[]).forEach(l=>{
+    o += `<line x1="${px(l[0])}" y1="${px(l[1])}" x2="${px(l[2])}" y2="${px(l[3])}" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="2 5" opacity=".9"/>`;
+    if(l[4]) o += `<text x="${px((l[0]+l[2])/2)}" y="${px((l[1]+l[3])/2)-5}" fill="#4fc3f7" font-family="IBM Plex Mono, monospace" font-size="8.5" text-anchor="middle">${esc(l[4])}</text>`;
+  });
+  // paths
+  (f.paths||[]).forEach(p=>{
+    const pts = p.pts.map(q=>px(q[0])+','+px(q[1])).join(' ');
+    const col = p.alt ? '#4fc3f7' : '#ffffff';
+    o += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="${p.alt?'6 5':'1 6'}" stroke-linecap="round" stroke-linejoin="round" opacity=".85" marker-end="url(#${p.alt?'arrc':'arr'}-${f.id})"/>`;
+  });
+  // safety margin
+  o += `<rect x="${px(0.4)}" y="${px(0.4)}" width="${5.2*S}" height="${5.2*S}" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-dasharray="3 6"/>`;
+  // lift
+  o += `<rect x="${px(4)}" y="${px(0)}" width="${2*S}" height="${2*S}" fill="#1e2a3a" stroke="#59d98e" stroke-width="2"/>`;
+  o += `<line x1="${px(4.4)}" y1="${px(2)}" x2="${px(5.6)}" y2="${px(2)}" stroke="#0d0f14" stroke-width="5"/>`;
+  o += `<line x1="${px(4.4)}" y1="${px(2)}" x2="${px(4.98)}" y2="${px(2)}" stroke="#59d98e" stroke-width="3"/>`;
+  o += `<line x1="${px(5.02)}" y1="${px(2)}" x2="${px(5.6)}" y2="${px(2)}" stroke="#59d98e" stroke-width="3"/>`;
+  o += `<rect x="${px(5.82)}" y="${px(0.7)}" width="${0.1*S}" height="${0.6*S}" fill="#59d98e"/>`;
+  o += `<text x="${px(5)}" y="${px(0.95)}" fill="#59d98e" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="13" text-anchor="middle">LIFT</text>`;
+  o += `<text x="${px(5)}" y="${px(1.25)}" fill="#59d98e" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle" opacity=".8">2 × 2 m</text>`;
+  o += `<text x="${px(5)}" y="${px(1.5)}" fill="#59d98e" font-family="IBM Plex Mono, monospace" font-size="8.5" text-anchor="middle" opacity=".7">${esc(f.liftNote||'')}</text>`;
+  // boundary
+  o += `<rect x="${px(0)}" y="${px(0)}" width="${6*S}" height="${6*S}" fill="none" stroke="#e7e9ee" stroke-width="3"/>`;
+  // markers
+  (f.keys||[]).forEach((k,i)=>{
+    const n=i+1;
+    o += `<circle cx="${px(k.x)}" cy="${px(k.y)}" r="10" fill="${C[k.c]}" stroke="#0d0f14" stroke-width="2"/>`;
+    o += `<text x="${px(k.x)}" y="${px(k.y)+3.5}" fill="#0d0f14" font-family="IBM Plex Mono, monospace" font-weight="700" font-size="10" text-anchor="middle">${n}</text>`;
+  });
+  // scale + north
+  o += `<text x="${px(0)}" y="${px(6)+16}" fill="#9aa3b5" font-family="IBM Plex Mono, monospace" font-size="9">0</text>`;
+  o += `<text x="${px(6)}" y="${px(6)+16}" fill="#9aa3b5" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="end">6 m</text>`;
+  o += `<text x="${px(3)}" y="${px(6)+16}" fill="#9aa3b5" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle">6 × 6 m tracked area · dashed = 40 cm safety margin</text>`;
+  o += `<text x="${px(0)-14}" y="${px(0)+4}" fill="#9aa3b5" font-family="IBM Plex Mono, monospace" font-size="10" text-anchor="middle">N↑</text>`;
+  o += `</svg>`;
+  return o;
+}
+
+const LIFT_NOTE = 'door faces S';
+
+const floors = [
+{
+  id:'b1', name:'B1 · Underground Hideout', tag:'Onboarding + Mission 1 · ~5 min · tension ▁',
+  goal:'<b>Learn the moves, then cut the museum\'s power.</b> Players spawn in an old service basement under the museum. The Fixer (a guide hologram) runs them through every verb they will need, then gives the first job: kill the power so the lift will run.',
+  beats:['Calm, warm light','Dripping pipes, low hum','Safe to fail: no alarm strikes here'],
+  floor:'#1a1d22', anchor:'TABLE', liftNote:'locked until power cut',
+  zones:[
+    {x:0,y:3.4,w:2.6,h:2.6,fill:'rgba(79,195,247,.10)',stroke:'#4fc3f7',label:'ONBOARDING PAD',lx:0.12,ly:3.68,tc:'#7fd3f7'},
+    {x:2.6,y:4.6,w:3.4,h:1.4,fill:'rgba(232,176,74,.08)',label:'TRAINING LANE →',lx:2.72,ly:4.86,tc:'#e8c27a'},
+    {x:0,y:0,w:3.0,h:3.4,fill:'rgba(179,136,255,.07)',label:'PLANNING ROOM',lx:0.12,ly:0.62,tc:'#c9b2ff'},
+  ],
+  walls:[{x:3.0,y:0.6,w:0.4,h:2.6,label:'crate stack',lx:3.2,ly:0.5,anchor:'middle'}],
+  vistas:[{x1:0,y1:0.9,x2:0,y2:2.8,label:'sewer tunnel (view only)',lx:-0.08,ly:1.85,vert:true,rot:-90}],
+  spawns:[[0.8,4.4],[1.8,4.4],[0.8,5.3],[1.8,5.3]],
+  lasers:[
+    {x1:3.6,y1:4.6,x2:3.6,y2:6,type:'low'},
+    {x1:4.85,y1:4.6,x2:4.85,y2:6,type:'high'},
+  ],
+  objs:[{x:5.55,y:3.25,w:0.4,h:0.6,fill:'#2f3a2a',stroke:'#59d98e',label:''}],
+  links:[[2.1,1.8,5.55,3.55,'voice only']],
+  paths:[
+    {pts:[[1.3,4.9],[2.3,4.2],[2.9,5.15],[5.5,5.15],[5.2,4.1],[2.8,3.75],[2.3,2.4]]},
+    {alt:true,pts:[[2.3,2.4],[3.7,3.45],[4.9,2.3]]}
+  ],
+  keys:[
+    {x:0.25,y:4.75,c:'story',t:'Mirror wall',d:'Players see their own avatars, check that hands and legs track, and wave at each other. Covers the "is this me?" moment before anything is asked of them.'},
+    {x:2.35,y:3.85,c:'story',t:'The Fixer (guide hologram)',d:'Short voice lines, one verb at a time, and he waits until every player has done it. Floating arrows on the floor lead to the next station.'},
+    {x:3.0,y:5.6,c:'int',t:'Big button',d:'Press with an open palm → a light comes on. Teaches the universal "press" response: click, light, sound.'},
+    {x:3.6,y:5.35,c:'haz',t:'Practice laser: low (step over)',d:'Ankle height, about 20 cm. Uses leg tracking. Touching it plays a soft buzz here, not an alarm.'},
+    {x:4.25,y:5.6,c:'int',t:'Tool rack: gloves + glass cutter',d:'Grab, then holster on your belt. Pinch the glass cutter. These tools are needed on floor 1.'},
+    {x:4.85,y:5.35,c:'haz',t:'Practice laser: high (duck)',d:'Chest height, about 1.1 m. Teaches ducking before the real thing.'},
+    {x:5.6,y:5.6,c:'int',t:'Lever',d:'Grab and pull down. Opens the shutter toward the planning room.'},
+    {x:1.8,y:1.8,c:'story',t:'Planning table (anchor prop)',d:'A miniature museum shows all five floors. The Fixer briefs the heist here. The table also holds the colour-coded fuse diagram.'},
+    {x:5.75,y:3.0,c:'coop',t:'Fuse box (hidden from the table)',d:'Player A reads the fuse order from the table; Player B flips the switches. The crate stack blocks their view of each other, so they must talk. Power cut → red emergency lighting.'},
+    {x:5.0,y:2.35,c:'coop',t:'Dual palm scanner (lift call)',d:'Needs palms from two different players at once. This is the first co-op handshake. The lift doors open.'},
+  ]
+},
+{
+  id:'g', name:'G · Laser Gallery', tag:'Mission 2 · ~5 min · tension ▃',
+  goal:'<b>Get the whole crew to the security booth and shut the lasers down.</b> Ground floor sculpture gallery in moonlight. A lit sculpture court sits in the middle, around the anchor plinth. Glass windows let players see it while they cross the lasers, and its entrance stays sealed by a laser curtain until the shutdown. The route runs as a loop: through the lasers along the east and south sides, then, once the lasers are off, back along the calm west and north sides, into the court, and past the atrium balcony.',
+  beats:['Moonlight through skylights','Laser hum','Relief walk back = time to admire the art'],
+  floor:'#1b1f2b', anchor:'SCULPTURE', liftNote:'',
+  zones:[
+    {x:0,y:4.4,w:1.4,h:1.6,fill:'rgba(179,136,255,.12)',stroke:'#b388ff',label:'BOOTH',lx:0.12,ly:4.66,tc:'#c9b2ff'},
+    {x:0,y:0,w:4.0,h:1.3,fill:'rgba(127,223,255,.05)',label:'RETURN ROUTE (safe after shutdown)',lx:0.12,ly:1.12,tc:'#7fdfff'},
+  ],
+  hatch:[{x:3.5,y:2.0,w:2.5,h:2.4},{x:1.4,y:4.0,w:4.6,h:2.0}],
+  walls:[
+    {x:1.3,y:1.3,w:0.12,h:2.7},
+    {x:1.3,y:1.3,w:0.7,h:0.12},{x:2.8,y:1.3,w:0.7,h:0.12},
+    {x:3.38,y:1.3,w:0.12,h:0.5},{x:3.38,y:3.4,w:0.12,h:0.6},
+    {x:1.3,y:3.88,w:0.4,h:0.12},{x:3.1,y:3.88,w:0.4,h:0.12}
+  ],
+  windows:[{x:3.38,y:1.8,w:0.12,h:1.6},{x:1.7,y:3.88,w:1.4,h:0.12}],
+  objs:[],
+  vistas:[
+    {x1:0,y1:0,x2:4.0,y2:0,label:'balcony over a 3-storey atrium (view only)',lx:2.0,ly:-0.1},
+  ],
+  lasers:[
+    {x1:3.5,y1:2.7,x2:6,y2:2.7,type:'low',label:'low · step',lx:4.1,ly:2.6},
+    {x1:3.5,y1:3.5,x2:6,y2:3.5,type:'high',label:'high · duck',lx:4.15,ly:3.4},
+    {x1:2.7,y1:4.0,x2:2.7,y2:6,type:'sweep'},
+    {x1:1.4,y1:4.0,x2:1.4,y2:6,type:'grid'},
+    {x1:2.0,y1:1.3,x2:2.8,y2:1.3,type:'grid'},
+    {x1:3.5,y1:1.65,x2:4.0,y2:1.65,type:'grid'},
+  ],
+  sweeps:[{x1:2.2,x2:3.4,y:5.85,label:'sweeping plane'}],
+  links:[[4.6,4.9,1.85,4.6,'relay']],
+  paths:[
+    {pts:[[5.0,2.3],[4.7,3.0],[4.7,4.8],[3.6,5.0],[1.9,5.0],[0.7,5.2]]},
+    {alt:true,pts:[[0.7,4.3],[0.65,0.7],[2.4,0.7],[2.4,2.3],[2.4,0.85],[3.75,0.75],[3.75,1.9],[4.9,2.25]]}
+  ],
+  keys:[
+    {x:3.75,y:1.25,c:'haz',t:'Bypass gate (laser grid)',d:'Seals the gap between the court and the lift so nobody can walk round the north side to the booth. It drops with the shutdown and becomes the last part of the return loop.'},
+    {x:5.65,y:2.7,c:'haz',t:'Low beams (step over)',d:'Three beams at different ankle heights. Touching one = 1 alarm strike, and the player walks back to the lift door.'},
+    {x:5.65,y:3.5,c:'haz',t:'High beams (duck)',d:'Two beams at 1.0 m and 1.2 m. Players crouch-walk under them.'},
+    {x:4.6,y:4.9,c:'coop',t:'Pressure plate P1',d:'Standing on it freezes the sweeping laser. Player A holds it while Player B crosses.'},
+    {x:2.7,y:5.4,c:'haz',t:'Sweeping laser plane',d:'A vertical sheet of light moving back and forth between 2.2 and 3.4 m. It cannot be beaten by timing alone; it has to be frozen.'},
+    {x:1.85,y:4.6,c:'coop',t:'Pressure plate P2',d:'Player B now holds it so Player A can cross. With three players, the third crosses on either freeze. This relay is the floor\'s core co-op moment.'},
+    {x:5.7,y:4.25,c:'int',t:'Antique hand mirror (on display)',d:'Grab it from a display stand in the east corridor and carry it through the lasers.'},
+    {x:1.4,y:5.45,c:'int',t:'Laser grid + receiver',d:'The booth door is a laser grid. Hold the mirror to bounce an emitter beam into the receiver and the grid drops. Uses reflection traces on BP_Laser.'},
+    {x:0.5,y:5.4,c:'story',t:'Shutdown lever + keycard',d:'Pull the lever: all lasers fade out and the music softens. Take the lift keycard.'},
+    {x:2.6,y:2.7,c:'story',t:'Sculpture court + code fragment #1',d:'Players can see the spot-lit sculpture through the glass windows the whole time they cross the lasers; it works as a landmark and a tease. After the shutdown, the laser curtain on its north entrance drops, players walk in, and code fragment #1 is hidden in the plinth base. It is needed for the vault dial on floor 2.'},
+    {x:0.8,y:0.25,c:'story',t:'Atrium balcony',d:'Stop at the railing and look down three storeys of marble. The railing sits exactly on the room boundary, so it also stops people from walking further. Do not invite players to lean on it unless a real wall or padding is there.'},
+  ]
+},
+{
+  id:'f1', name:'1 · Treasure Hall', tag:'Mission 3 · 3:00 timer · tension ▅',
+  goal:'<b>Steal as much value as you can in 3 minutes, and don\'t get seen.</b> An open hall with island showcases. Heavier loot is worth more but needs two people. A guard walks the corridor behind a glass wall, and his flashlight sweeps the room.',
+  beats:['Warm gold spotlights on cases','Ticking clock','Footsteps getting closer = guard pass'],
+  floor:'#221d17', anchor:'EGG CASE', liftNote:'',
+  zones:[
+    {x:4.2,y:2.05,w:1.8,h:0.85,fill:'rgba(89,217,142,.12)',stroke:'#59d98e',label:'LOOT CART',lx:4.3,ly:2.33,tc:'#8be6b0'},
+  ],
+  polys:[{pts:[[6,4.5],[1.6,2.7],[1.6,6.0]],fill:'rgba(246,231,168,.10)',label:'flashlight sweep',lx:3.4,ly:4.55}],
+  objs:[
+    {x:0.12,y:2.9,w:0.5,h:0.7,fill:'#2b3550',stroke:'#7fdfff',label:'W1'},
+    {x:0.12,y:4.1,w:0.5,h:0.7,fill:'#2b3550',stroke:'#7fdfff',label:'W2'},
+    {x:1.3,y:5.38,w:0.6,h:0.5,fill:'#3d3328',stroke:'#e8b04a',label:'S1'},
+    {x:2.7,y:5.3,w:0.7,h:0.58,fill:'#3d3328',stroke:'#4fc3f7',label:'S2'},
+    {x:4.1,y:5.38,w:0.6,h:0.5,fill:'#3d3328',stroke:'#e8b04a',label:'S3'},
+    {x:3.3,y:3.4,w:0.7,h:0.6,fill:'#3d3328',stroke:'#e8b04a',label:'coins'},
+    {x:1.55,y:0.05,w:1.5,h:0.14,fill:'#6b4f1f',stroke:'#e8b04a',label:''},
+  ],
+  vistas:[{x1:6,y1:3.0,x2:6,y2:6,label:'glass wall · guard corridor',lx:6.12,ly:4.5,vert:true,rot:90}],
+  paths:[{pts:[[5.0,2.4],[3.0,2.6],[2.4,0.7],[0.95,1.2],[0.95,4.7],[2.0,4.95],[4.4,4.95],[4.8,3.3],[5.0,2.55]]}],
+  links:[[1.95,2.25,3.05,4.85,'']],
+  keys:[
+    {x:5.1,y:2.5,c:'story',t:'Loot cart (drop zone)',d:'Loot only counts once it is in the cart (BP_Counter). The cart has a weight limit, so the crew has to choose: lots of small items or one big statue?'},
+    {x:1.8,y:1.8,c:'coop',t:'Centre case: jewelled egg (anchor prop)',d:'The glass lid needs two hands on opposite sides, which means two players. Code fragment #2 is inside the egg.'},
+    {x:0.9,y:3.85,c:'int',t:'Jewellery cases W1, W2',d:'Pinch-grab rings and necklaces. Fast, low value, light. A good job for one player.'},
+    {x:1.6,y:5.0,c:'int',t:'Vase S1',d:'One-player grab with both hands. If dropped it smashes: 0 value and 1 alarm strike.'},
+    {x:3.05,y:4.85,c:'coop',t:'Statue S2: two-person carry',d:'Highest value. Both players must hold it, and it moves only when both hands lift. They carry it to the cart together. Can be used as the weight swap on floor 2.'},
+    {x:4.4,y:5.0,c:'int',t:'Amphora S3',d:'Medium value. Worth almost exactly what the vault prize weighs, which hints at the swap trick.'},
+    {x:3.65,y:3.05,c:'int',t:'Coin cabinet (drawers)',d:'Pull out drawers and scoop coins. Adds the drawer interaction type.'},
+    {x:2.3,y:0.45,c:'coop',t:'Painting behind glass',d:'One player traces a circle on the glass with the cutter (gesture recognition); the other holds the frame so it doesn\'t fall.'},
+    {x:5.75,y:4.5,c:'haz',t:'Guard flashlight window',d:'Every ~40 s, footsteps get louder and a light cone sweeps the room. Anyone standing in the cone above case height = 1 alarm strike. Crouch behind cases to hide.'},
+    {x:3.5,y:0.35,c:'story',t:'Countdown clock',d:'A big wall clock facing the room. At 0:00 the lift doors start closing, and anyone outside is pulled in with a strike.'},
+  ]
+},
+{
+  id:'f2', name:'2 · The Vault', tag:'Mission 4 · ~6 min · tension ▆',
+  goal:'<b>Open the vault together and take the main prize.</b> A room inside the room: a steel vault fills the NW of the floor, and its round door faces you as you step out of the lift. Opening it needs both code fragments, a simultaneous key turn and a dial cracked by two players.',
+  beats:['Cold white light, steel','Silence, then heartbeat','Music rises when the door swings'],
+  floor:'#171b20', anchor:'PRIZE', liftNote:'',
+  zones:[
+    {x:0,y:0,w:3.6,h:3.6,fill:'rgba(179,136,255,.08)',label:'VAULT',lx:0.15,ly:0.6,tc:'#c9b2ff'},
+    {x:3.6,y:2.0,w:2.4,h:4.0,fill:'rgba(255,255,255,.02)',label:'ANTECHAMBER',lx:3.75,ly:5.0,tc:'#9aa3b5'},
+  ],
+  walls:[
+    {x:3.35,y:0,w:0.25,h:2.0},{x:3.35,y:3.2,w:0.25,h:0.4},{x:0,y:3.35,w:3.6,h:0.25}
+  ],
+  doors:[{x1:3.47,y1:2.0,x2:3.47,y2:3.2,label:'round vault door',lx:3.25,ly:2.6,rot:-90}],
+  objs:[{x:0.08,y:0.9,w:0.35,h:1.8,fill:'#2e3644',stroke:'#7a869e',label:''}],
+  vistas:[{x1:0,y1:0.35,x2:3.3,y2:0.35,label:'vault depth: shelves fade into darkness',lx:1.7,ly:0.25}],
+  links:[[5.75,5.2,0.35,5.6,'turn together < 0.5 s'],[3.75,2.6,3.0,5.7,'']],
+  paths:[
+    {pts:[[5.0,2.3],[5.5,2.85]]},
+    {alt:true,pts:[[5.2,3.2],[5.4,4.9]]},{alt:true,pts:[[4.8,3.3],[0.8,5.3]]},
+    {pts:[[4.3,2.7],[2.7,2.6],[2.1,2.1]]}
+  ],
+  keys:[
+    {x:3.8,y:2.6,c:'coop',t:'Vault door + dial lock',d:'Player A turns the dial with a hand-tracked twist. They cannot see whether a tumbler has clicked; only the terminal (5) can.'},
+    {x:5.75,y:5.2,c:'coop',t:'Key switch K1',d:'One of two key switches 5.4 m apart. Both must turn within 0.5 s of each other ("on three!"). It has to be two players.'},
+    {x:0.35,y:5.6,c:'coop',t:'Key switch K2',d:'Placed in the far corner to make players use the full width of the room.'},
+    {x:5.75,y:2.85,c:'int',t:'Fragment keypad',d:'Enter fragment #1 (from G) and #2 (from the egg). This arms the key switches.'},
+    {x:3.0,y:5.7,c:'coop',t:'Tumbler terminal',d:'Shows the dial\'s pin graph. Player B calls out "warmer / colder / CLICK" while Player A turns the dial. Asymmetric information.'},
+    {x:1.8,y:1.8,c:'story',t:'The prize (anchor pedestal)',d:'On a weight sensor. Lift it without putting down the amphora or statue from floor 1 and the alarm triggers at once; with the swap, the crew gets 20 s of quiet. Either way, the alarm goes off.'},
+    {x:0.25,y:2.85,c:'int',t:'Deposit boxes (bonus loot)',d:'A wall of small drawers to pull open. Optional greed: every second spent here is time the guards gain on the rooftop.'},
+  ]
+},
+{
+  id:'roof', name:'R · Rooftop Getaway', tag:'Finale · alarm on · tension █',
+  goal:'<b>Rig the zipline and get off the roof before the guards break through.</b> The lift opens onto the open air. One player has to hold the stairwell door while the others prepare the escape. Everyone must grab the zipline together to leave.',
+  beats:['Wind, sirens, police searchlight','Door being hammered from the stairwell','City lights 30 storeys down'],
+  floor:'#141a22', anchor:'CRATE', liftNote:'exits as stair housing',
+  zones:[
+    {x:2.8,y:3.4,w:1.4,h:1.4,fill:'rgba(127,223,255,.16)',stroke:'#7fdfff',label:'GLASS',lx:3.05,ly:4.15,tc:'#7fdfff'},
+    {x:0,y:4.6,w:1.6,h:1.4,fill:'rgba(89,217,142,.10)',stroke:'#59d98e',label:'ZIPLINE',lx:0.12,ly:4.86,tc:'#8be6b0'},
+  ],
+  objs:[{x:4.4,y:5.0,w:1.0,h:0.7,fill:'#2e3644',stroke:'#7a869e',label:'AC unit'},{x:0.4,y:2.9,w:0.7,h:0.9,fill:'#2e3644',stroke:'#7a869e',label:'vent'}],
+  polys:[{pts:[[3.1,0.4],[1.6,3.2],[4.6,3.2]],fill:'rgba(255,59,79,.08)',stroke:'rgba(255,59,79,.4)',label:'searchlight',lx:2.7,ly:2.95,tc:'#ff8a96'}],
+  vistas:[
+    {x1:0,y1:0,x2:4.0,y2:0,label:'skyline · neighbouring towers',lx:2.0,ly:-0.1},
+    {x1:0,y1:0,x2:0,y2:6,label:'30-storey drop · parapet 1 m',lx:-0.08,ly:3.0,vert:true,rot:-90},
+    {x1:0,y1:6,x2:6,y2:6},
+  ],
+  doors:[{x1:6,y1:3.0,x2:6,y2:4.1,label:'stairwell',lx:6.15,ly:3.55,rot:90}],
+  links:[[5.5,3.55,0.6,5.3,'']],
+  paths:[
+    {pts:[[5.0,2.3],[2.6,2.0],[2.15,1.85]]},
+    {alt:true,pts:[[4.6,2.4],[5.5,3.4]]},
+    {pts:[[1.9,2.3],[1.3,4.0],[0.85,5.0]]}
+  ],
+  keys:[
+    {x:1.8,y:1.8,c:'int',t:'Supply crate (anchor prop)',d:'Pry the lid open with the crowbar from B1. Inside: the zipline launcher and harness clips.'},
+    {x:5.5,y:3.55,c:'coop',t:'Stairwell door: hold the bar',d:'Guards are pushing from the other side. One player must keep both hands on the barricade bar, and the door shudders whenever they ease off. The number of alarm strikes sets how hard the guards push.'},
+    {x:0.55,y:5.45,c:'int',t:'Zipline launcher',d:'Aim at the neighbouring roof and fire. The cable stretches off into the night, beyond the room\'s boundary.'},
+    {x:1.05,y:5.2,c:'coop',t:'Zipline handles: all grab',d:'Every player grabs within 3 s, including the door holder, who has to run across (a final dash across the full diagonal of the room). The world slides away and the ending score appears: loot, time, strikes.'},
+    {x:3.5,y:4.6,c:'story',t:'Glass skylight',d:'Walkable glass looking down into the treasure hall, now swarming with guards. Links the floors vertically and is good for a moment of vertigo.'},
+    {x:3.1,y:1.0,c:'haz',t:'Police searchlight',d:'Sweeps the roof. Getting caught adds 5 s to the door-hold timer. Hide behind the crate or the vents.'},
+    {x:1.3,y:0.25,c:'story',t:'Skyline + parapet',d:'The 1 m parapet sits exactly on the room boundary, so the drop is always on the far side of where players can walk. The whole city is your "space" here: the cheapest way to make the room feel huge.'},
+  ]
+}
+];
+
+const wrap = document.getElementById('floors');
+floors.forEach(f=>{
+  const keys = f.keys.map((k,i)=>`<li><span class="num" style="background:${C[k.c]}">${i+1}</span><div><div class="t">${esc(k.t)}</div><div class="d">${esc(k.d)}</div></div></li>`).join('');
+  const beats = (f.beats||[]).map(b=>`<span>${esc(b)}</span>`).join('');
+  wrap.insertAdjacentHTML('beforeend',`
+    <section class="floor" id="${f.id}">
+      <div class="floorhead"><h2 style="margin:0">${esc(f.name)}</h2><span class="tag">${esc(f.tag)}</span></div>
+      <p class="goal">${f.goal}</p>
+      <div class="floorbody">
+        <div>${plan(f)}<div class="beats">${beats}</div></div>
+        <ol class="keys">${keys}</ol>
+      </div>
+    </section>`);
+});
+
+// Stack / section + tension
+(function(){
+  const s = document.getElementById('stackSvg');
+  const names = [['R','Rooftop Getaway','#59d98e'],['2','The Vault','#b388ff'],['1','Treasure Hall','#e8b04a'],['G','Laser Gallery','#ff3b4f'],['B1','Underground Hideout','#4fc3f7']];
+  let o = '';
+  const x0=40, w=420, h=56, gap=10, y0=20;
+  names.forEach((n,i)=>{
+    const y=y0+i*(h+gap);
+    o += `<rect x="${x0}" y="${y}" width="${w}" height="${h}" rx="6" fill="#1b2030" stroke="${n[2]}" stroke-opacity=".7"/>`;
+    o += `<text x="${x0+16}" y="${y+34}" fill="${n[2]}" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="20">${n[0]}</text>`;
+    o += `<text x="${x0+64}" y="${y+34}" fill="#e7e9ee" font-family="Space Grotesk, sans-serif" font-size="16">${n[1]}</text>`;
+  });
+  // lift shaft
+  o += `<rect x="${x0+w-90}" y="${y0-6}" width="70" height="${5*h+4*gap+12}" fill="none" stroke="#59d98e" stroke-width="2" stroke-dasharray="6 4"/>`;
+  o += `<text x="${x0+w-55}" y="${y0+5*h+4*gap+26}" fill="#59d98e" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle">lift shaft · same NE corner</text>`;
+  // tension curve
+  const cx=560, cw=500, cy=20, ch=310;
+  o += `<text x="${cx}" y="${cy+4}" fill="#9aa3b5" font-family="IBM Plex Mono, monospace" font-size="11">TENSION</text>`;
+  o += `<line x1="${cx}" y1="${cy+ch}" x2="${cx+cw}" y2="${cy+ch}" stroke="#2a3142"/>`;
+  o += `<line x1="${cx}" y1="${cy+14}" x2="${cx}" y2="${cy+ch}" stroke="#2a3142"/>`;
+  const pts=[[0,0.12],[0.12,0.15],[0.2,0.22],[0.24,0.12],[0.3,0.38],[0.4,0.5],[0.46,0.3],[0.52,0.55],[0.64,0.68],[0.68,0.45],[0.74,0.62],[0.84,0.8],[0.88,0.92],[1,1]];
+  const P = pts.map(p=>[cx+p[0]*cw, cy+ch - p[1]*(ch-30)]);
+  o += `<polyline points="${P.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#ff3b4f" stroke-width="3" stroke-linejoin="round"/>`;
+  const labels=[[0.1,'B1 learn'],[0.33,'G lasers'],[0.56,'1 clock'],[0.76,'2 vault'],[0.95,'R escape']];
+  labels.forEach(l=>{o += `<text x="${cx+l[0]*cw}" y="${cy+ch+18}" fill="#9aa3b5" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle">${l[1]}</text>`;});
+  [[0.24,'lift ride = breather'],[0.46,'safe walk back'],[0.68,'lift ride']].forEach(l=>{
+    const p = P[pts.findIndex(q=>q[0]===l[0])];
+    o += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#59d98e"/>`;
+    o += `<text x="${p[0]}" y="${p[1]+18}" fill="#59d98e" font-family="IBM Plex Mono, monospace" font-size="10" text-anchor="middle">${l[1]}</text>`;
+  });
+  s.innerHTML = o;
+})();
+</script>
+</body>
+</html>

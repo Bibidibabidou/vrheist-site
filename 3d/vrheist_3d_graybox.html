@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VR Heist — 3D Graybox Floor Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--panel:rgba(21,25,34,.92);--line:#2a3142;--text:#e7e9ee;--muted:#9aa3b5;--gold:#e8b04a;--cyan:#4fc3f7;--red:#ff3b4f;--violet:#b388ff;--green:#59d98e}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#1a2030 0%,#0d0f14 70%);color:var(--text);font-family:'Space Grotesk',system-ui,sans-serif}
+#stage{position:fixed;inset:0}
+#labels{position:fixed;inset:0;pointer-events:none}
+#ui{position:fixed;top:14px;left:14px;width:300px;max-height:calc(100% - 28px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;backdrop-filter:blur(6px)}
+#ui h1{font-size:1.15rem;margin:0 0 2px}
+.kicker{font-family:'IBM Plex Mono',monospace;color:var(--red);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase}
+.sec{margin-top:14px}
+.sec>label,.sec .lab{display:block;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:#1b2030;color:var(--text);border:1px solid var(--line);padding:6px 9px;border-radius:6px;cursor:pointer}
+button:hover{border-color:#556}
+button.on{background:#2a3350;border-color:var(--gold);color:#fff}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.tog{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);margin:5px 0;cursor:pointer}
+.tog input{accent-color:var(--gold)}
+#goal{font-size:.85rem;color:var(--muted);line-height:1.45}
+#goal b{color:var(--text)}
+#keylist{list-style:none;margin:0;padding:0}
+#keylist li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:.84rem;cursor:pointer;border-bottom:1px dashed var(--line)}
+#keylist li:hover{color:#fff}
+.dot{flex:0 0 20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 .68rem 'IBM Plex Mono',monospace;color:#0d0f14}
+#info{position:fixed;right:14px;bottom:14px;width:340px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:none}
+#info .x{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--muted);font-size:1rem}
+#info h3{margin:4px 0 6px;font-size:1rem;display:flex;gap:8px;align-items:center}
+#info p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.5}
+#info .fl{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted)}
+#hint{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:20px;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.75rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+/* 3D labels */
+.pin{pointer-events:auto;cursor:pointer;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 11px 'IBM Plex Mono',monospace;color:#0d0f14;border:2px solid #0d0f14;box-shadow:0 0 0 1px rgba(255,255,255,.35),0 2px 8px rgba(0,0,0,.5);transition:transform .12s}
+.pin:hover{transform:scale(1.25)}
+.pin.sel{outline:2px solid #fff;outline-offset:2px}
+.flabel{font:700 13px 'Space Grotesk',sans-serif;padding:3px 9px;border-radius:5px;background:rgba(13,15,20,.85);border:1px solid;white-space:nowrap;pointer-events:auto;cursor:pointer}
+.zlabel{font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#d6dbe6;background:rgba(13,15,20,.6);padding:1px 5px;border-radius:3px;white-space:nowrap}
+.vlabel{font:500 9px 'IBM Plex Mono',monospace;color:#7fdfff;background:rgba(13,15,20,.6);padding:1px 5px;border-radius:3px;white-space:nowrap}
+@media (max-width:760px){#ui{width:calc(100% - 28px);max-height:42%}#info{left:14px;width:auto}#hint{display:none}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+
+<div id="ui">
+  <div class="kicker">VR Heist · 3D graybox</div>
+  <h1>Five floors, one 6 × 6 m room</h1>
+  <div class="sec">
+    <span class="lab">View</span>
+    <div class="btns" id="viewBtns"></div>
+  </div>
+  <div class="sec">
+    <label for="explode">Explode floors</label>
+    <input type="range" id="explode" min="0" max="1" step="0.01" value="0.45">
+  </div>
+  <div class="sec">
+    <span class="lab">Camera</span>
+    <div class="btns">
+      <button data-cam="iso">Iso</button><button data-cam="top">Top</button><button data-cam="front">Front</button><button data-cam="side">Side</button><button data-cam="player">Eye level</button>
+    </div>
+  </div>
+  <div class="sec">
+    <span class="lab">Show</span>
+    <label class="tog"><input type="checkbox" id="tPins" checked> Numbered elements</label>
+    <label class="tog"><input type="checkbox" id="tZones" checked> Zone &amp; view labels</label>
+    <label class="tog"><input type="checkbox" id="tPaths" checked> Player routes &amp; co-op links</label>
+    <label class="tog"><input type="checkbox" id="tWalls"> Full-height outer walls</label>
+    <label class="tog"><input type="checkbox" id="tPeople" checked> 1.75 m player for scale</label>
+    <label class="tog"><input type="checkbox" id="tAnim" checked> Animate lasers &amp; lights</label>
+  </div>
+  <div class="sec">
+    <div class="legend"><span><i style="background:#e8b04a"></i>Interaction</span><span><i style="background:#4fc3f7"></i>Co-op</span><span><i style="background:#ff3b4f"></i>Hazard</span><span><i style="background:#b388ff"></i>Story</span><span><i style="background:#59d98e"></i>Lift</span></div>
+  </div>
+  <div class="sec" id="floorInfo" style="display:none">
+    <span class="lab" id="floorTag"></span>
+    <div id="goal"></div>
+    <ul id="keylist" style="margin-top:8px"></ul>
+  </div>
+</div>
+
+<div id="info"><button class="x" id="infoX" aria-label="Close">✕</button><div class="fl" id="infoFloor"></div><h3 id="infoT"></h3><p id="infoD"></p></div>
+<div id="hint">drag = orbit · right-drag = pan · scroll = zoom · keys 0–5 = floors · click a number for details</div>
+
+<script>
+const floors = [
+{
+  id:'b1', name:'B1 · Underground Hideout', tag:'Onboarding + Mission 1 · ~5 min · tension ▁',
+  goal:'<b>Learn the moves, then cut the museum\'s power.</b> Players spawn in an old service basement under the museum. The Fixer (a guide hologram) runs them through every verb they will need, then gives the first job: kill the power so the lift will run.',
+  beats:['Calm, warm light','Dripping pipes, low hum','Safe to fail: no alarm strikes here'],
+  floor:'#1a1d22', anchor:'TABLE', liftNote:'locked until power cut',
+  zones:[
+    {x:0,y:3.4,w:2.6,h:2.6,fill:'rgba(79,195,247,.10)',stroke:'#4fc3f7',label:'ONBOARDING PAD',lx:0.12,ly:3.68,tc:'#7fd3f7'},
+    {x:2.6,y:4.6,w:3.4,h:1.4,fill:'rgba(232,176,74,.08)',label:'TRAINING LANE →',lx:2.72,ly:4.86,tc:'#e8c27a'},
+    {x:0,y:0,w:3.0,h:3.4,fill:'rgba(179,136,255,.07)',label:'PLANNING ROOM',lx:0.12,ly:0.62,tc:'#c9b2ff'},
+  ],
+  walls:[{x:3.0,y:0.6,w:0.4,h:2.6,label:'crate stack',lx:3.2,ly:0.5,anchor:'middle'}],
+  vistas:[{x1:0,y1:0.9,x2:0,y2:2.8,label:'sewer tunnel (view only)',lx:-0.08,ly:1.85,vert:true,rot:-90}],
+  spawns:[[0.8,4.4],[1.8,4.4],[0.8,5.3],[1.8,5.3]],
+  lasers:[
+    {x1:3.6,y1:4.6,x2:3.6,y2:6,type:'low'},
+    {x1:4.85,y1:4.6,x2:4.85,y2:6,type:'high'},
+  ],
+  objs:[{x:5.55,y:3.25,w:0.4,h:0.6,fill:'#2f3a2a',stroke:'#59d98e',label:''}],
+  links:[[2.1,1.8,5.55,3.55,'voice only']],
+  paths:[
+    {pts:[[1.3,4.9],[2.3,4.2],[2.9,5.15],[5.5,5.15],[5.2,4.1],[2.8,3.75],[2.3,2.4]]},
+    {alt:true,pts:[[2.3,2.4],[3.7,3.45],[4.9,2.3]]}
+  ],
+  keys:[
+    {x:0.25,y:4.75,c:'story',t:'Mirror wall',d:'Players see their own avatars, check that hands and legs track, and wave at each other. Covers the "is this me?" moment before anything is asked of them.'},
+    {x:2.35,y:3.85,c:'story',t:'The Fixer (guide hologram)',d:'Short voice lines, one verb at a time, and he waits until every player has done it. Floating arrows on the floor lead to the next station.'},
+    {x:3.0,y:5.6,c:'int',t:'Big button',d:'Press with an open palm → a light comes on. Teaches the universal "press" response: click, light, sound.'},
+    {x:3.6,y:5.35,c:'haz',t:'Practice laser: low (step over)',d:'Ankle height, about 20 cm. Uses leg tracking. Touching it plays a soft buzz here, not an alarm.'},
+    {x:4.25,y:5.6,c:'int',t:'Tool rack: gloves + glass cutter',d:'Grab, then holster on your belt. Pinch the glass cutter. These tools are needed on floor 1.'},
+    {x:4.85,y:5.35,c:'haz',t:'Practice laser: high (duck)',d:'Chest height, about 1.1 m. Teaches ducking before the real thing.'},
+    {x:5.6,y:5.6,c:'int',t:'Lever',d:'Grab and pull down. Opens the shutter toward the planning room.'},
+    {x:1.8,y:1.8,c:'story',t:'Planning table (anchor prop)',d:'A miniature museum shows all five floors. The Fixer briefs the heist here. The table also holds the colour-coded fuse diagram.'},
+    {x:5.75,y:3.0,c:'coop',t:'Fuse box (hidden from the table)',d:'Player A reads the fuse order from the table; Player B flips the switches. The crate stack blocks their view of each other, so they must talk. Power cut → red emergency lighting.'},
+    {x:5.0,y:2.35,c:'coop',t:'Dual palm scanner (lift call)',d:'Needs palms from two different players at once. This is the first co-op handshake. The lift doors open.'},
+  ]
+},
+{
+  id:'g', name:'G · Laser Gallery', tag:'Mission 2 · ~5 min · tension ▃',
+  goal:'<b>Get the whole crew to the security booth and shut the lasers down.</b> Ground floor sculpture gallery in moonlight. A lit sculpture court sits in the middle, around the anchor plinth. Glass windows let players see it while they cross the lasers, and its entrance stays sealed by a laser curtain until the shutdown. The route runs as a loop: through the lasers along the east and south sides, then, once the lasers are off, back along the calm west and north sides, into the court, and past the atrium balcony.',
+  beats:['Moonlight through skylights','Laser hum','Relief walk back = time to admire the art'],
+  floor:'#1b1f2b', anchor:'SCULPTURE', liftNote:'',
+  zones:[
+    {x:0,y:4.4,w:1.4,h:1.6,fill:'rgba(179,136,255,.12)',stroke:'#b388ff',label:'BOOTH',lx:0.12,ly:4.66,tc:'#c9b2ff'},
+    {x:0,y:0,w:4.0,h:1.3,fill:'rgba(127,223,255,.05)',label:'RETURN ROUTE (safe after shutdown)',lx:0.12,ly:1.12,tc:'#7fdfff'},
+  ],
+  hatch:[{x:3.5,y:2.0,w:2.5,h:2.4},{x:1.4,y:4.0,w:4.6,h:2.0}],
+  walls:[
+    {x:1.3,y:1.3,w:0.12,h:2.7},
+    {x:1.3,y:1.3,w:0.7,h:0.12},{x:2.8,y:1.3,w:0.7,h:0.12},
+    {x:3.38,y:1.3,w:0.12,h:0.5},{x:3.38,y:3.4,w:0.12,h:0.6},
+    {x:1.3,y:3.88,w:0.4,h:0.12},{x:3.1,y:3.88,w:0.4,h:0.12}
+  ],
+  windows:[{x:3.38,y:1.8,w:0.12,h:1.6},{x:1.7,y:3.88,w:1.4,h:0.12}],
+  objs:[],
+  vistas:[
+    {x1:0,y1:0,x2:4.0,y2:0,label:'balcony over a 3-storey atrium (view only)',lx:2.0,ly:-0.1},
+  ],
+  lasers:[
+    {x1:3.5,y1:2.7,x2:6,y2:2.7,type:'low',label:'low · step',lx:4.1,ly:2.6},
+    {x1:3.5,y1:3.5,x2:6,y2:3.5,type:'high',label:'high · duck',lx:4.15,ly:3.4},
+    {x1:2.7,y1:4.0,x2:2.7,y2:6,type:'sweep'},
+    {x1:1.4,y1:4.0,x2:1.4,y2:6,type:'grid'},
+    {x1:2.0,y1:1.3,x2:2.8,y2:1.3,type:'grid'},
+    {x1:3.5,y1:1.65,x2:4.0,y2:1.65,type:'grid'},
+  ],
+  sweeps:[{x1:2.2,x2:3.4,y:5.85,label:'sweeping plane'}],
+  links:[[4.6,4.9,1.85,4.6,'relay']],
+  paths:[
+    {pts:[[5.0,2.3],[4.7,3.0],[4.7,4.8],[3.6,5.0],[1.9,5.0],[0.7,5.2]]},
+    {alt:true,pts:[[0.7,4.3],[0.65,0.7],[2.4,0.7],[2.4,2.3],[2.4,0.85],[3.75,0.75],[3.75,1.9],[4.9,2.25]]}
+  ],
+  keys:[
+    {x:3.75,y:1.25,c:'haz',t:'Bypass gate (laser grid)',d:'Seals the gap between the court and the lift so nobody can walk round the north side to the booth. It drops with the shutdown and becomes the last part of the return loop.'},
+    {x:5.65,y:2.7,c:'haz',t:'Low beams (step over)',d:'Three beams at different ankle heights. Touching one = 1 alarm strike, and the player walks back to the lift door.'},
+    {x:5.65,y:3.5,c:'haz',t:'High beams (duck)',d:'Two beams at 1.0 m and 1.2 m. Players crouch-walk under them.'},
+    {x:4.6,y:4.9,c:'coop',t:'Pressure plate P1',d:'Standing on it freezes the sweeping laser. Player A holds it while Player B crosses.'},
+    {x:2.7,y:5.4,c:'haz',t:'Sweeping laser plane',d:'A vertical sheet of light moving back and forth between 2.2 and 3.4 m. It cannot be beaten by timing alone; it has to be frozen.'},
+    {x:1.85,y:4.6,c:'coop',t:'Pressure plate P2',d:'Player B now holds it so Player A can cross. With three players, the third crosses on either freeze. This relay is the floor\'s core co-op moment.'},
+    {x:5.7,y:4.25,c:'int',t:'Antique hand mirror (on display)',d:'Grab it from a display stand in the east corridor and carry it through the lasers.'},
+    {x:1.4,y:5.45,c:'int',t:'Laser grid + receiver',d:'The booth door is a laser grid. Hold the mirror to bounce an emitter beam into the receiver and the grid drops. Uses reflection traces on BP_Laser.'},
+    {x:0.5,y:5.4,c:'story',t:'Shutdown lever + keycard',d:'Pull the lever: all lasers fade out and the music softens. Take the lift keycard.'},
+    {x:2.6,y:2.7,c:'story',t:'Sculpture court + code fragment #1',d:'Players can see the spot-lit sculpture through the glass windows the whole time they cross the lasers; it works as a landmark and a tease. After the shutdown, the laser curtain on its north entrance drops, players walk in, and code fragment #1 is hidden in the plinth base. It is needed for the vault dial on floor 2.'},
+    {x:0.8,y:0.25,c:'story',t:'Atrium balcony',d:'Stop at the railing and look down three storeys of marble. The railing sits exactly on the room boundary, so it also stops people from walking further. Do not invite players to lean on it unless a real wall or padding is there.'},
+  ]
+},
+{
+  id:'f1', name:'1 · Treasure Hall', tag:'Mission 3 · 3:00 timer · tension ▅',
+  goal:'<b>Steal as much value as you can in 3 minutes, and don\'t get seen.</b> An open hall with island showcases. Heavier loot is worth more but needs two people. A guard walks the corridor behind a glass wall, and his flashlight sweeps the room.',
+  beats:['Warm gold spotlights on cases','Ticking clock','Footsteps getting closer = guard pass'],
+  floor:'#221d17', anchor:'EGG CASE', liftNote:'',
+  zones:[
+    {x:4.2,y:2.05,w:1.8,h:0.85,fill:'rgba(89,217,142,.12)',stroke:'#59d98e',label:'LOOT CART',lx:4.3,ly:2.33,tc:'#8be6b0'},
+  ],
+  polys:[{pts:[[6,4.5],[1.6,2.7],[1.6,6.0]],fill:'rgba(246,231,168,.10)',label:'flashlight sweep',lx:3.4,ly:4.55}],
+  objs:[
+    {x:0.12,y:2.9,w:0.5,h:0.7,fill:'#2b3550',stroke:'#7fdfff',label:'W1'},
+    {x:0.12,y:4.1,w:0.5,h:0.7,fill:'#2b3550',stroke:'#7fdfff',label:'W2'},
+    {x:1.3,y:5.38,w:0.6,h:0.5,fill:'#3d3328',stroke:'#e8b04a',label:'S1'},
+    {x:2.7,y:5.3,w:0.7,h:0.58,fill:'#3d3328',stroke:'#4fc3f7',label:'S2'},
+    {x:4.1,y:5.38,w:0.6,h:0.5,fill:'#3d3328',stroke:'#e8b04a',label:'S3'},
+    {x:3.3,y:3.4,w:0.7,h:0.6,fill:'#3d3328',stroke:'#e8b04a',label:'coins'},
+    {x:1.55,y:0.05,w:1.5,h:0.14,fill:'#6b4f1f',stroke:'#e8b04a',label:''},
+  ],
+  vistas:[{x1:6,y1:3.0,x2:6,y2:6,label:'glass wall · guard corridor',lx:6.12,ly:4.5,vert:true,rot:90}],
+  paths:[{pts:[[5.0,2.4],[3.0,2.6],[2.4,0.7],[0.95,1.2],[0.95,4.7],[2.0,4.95],[4.4,4.95],[4.8,3.3],[5.0,2.55]]}],
+  links:[[1.95,2.25,3.05,4.85,'']],
+  keys:[
+    {x:5.1,y:2.5,c:'story',t:'Loot cart (drop zone)',d:'Loot only counts once it is in the cart (BP_Counter). The cart has a weight limit, so the crew has to choose: lots of small items or one big statue?'},
+    {x:1.8,y:1.8,c:'coop',t:'Centre case: jewelled egg (anchor prop)',d:'The glass lid needs two hands on opposite sides, which means two players. Code fragment #2 is inside the egg.'},
+    {x:0.9,y:3.85,c:'int',t:'Jewellery cases W1, W2',d:'Pinch-grab rings and necklaces. Fast, low value, light. A good job for one player.'},
+    {x:1.6,y:5.0,c:'int',t:'Vase S1',d:'One-player grab with both hands. If dropped it smashes: 0 value and 1 alarm strike.'},
+    {x:3.05,y:4.85,c:'coop',t:'Statue S2: two-person carry',d:'Highest value. Both players must hold it, and it moves only when both hands lift. They carry it to the cart together. Can be used as the weight swap on floor 2.'},
+    {x:4.4,y:5.0,c:'int',t:'Amphora S3',d:'Medium value. Worth almost exactly what the vault prize weighs, which hints at the swap trick.'},
+    {x:3.65,y:3.05,c:'int',t:'Coin cabinet (drawers)',d:'Pull out drawers and scoop coins. Adds the drawer interaction type.'},
+    {x:2.3,y:0.45,c:'coop',t:'Painting behind glass',d:'One player traces a circle on the glass with the cutter (gesture recognition); the other holds the frame so it doesn\'t fall.'},
+    {x:5.75,y:4.5,c:'haz',t:'Guard flashlight window',d:'Every ~40 s, footsteps get louder and a light cone sweeps the room. Anyone standing in the cone above case height = 1 alarm strike. Crouch behind cases to hide.'},
+    {x:3.5,y:0.35,c:'story',t:'Countdown clock',d:'A big wall clock facing the room. At 0:00 the lift doors start closing, and anyone outside is pulled in with a strike.'},
+  ]
+},
+{
+  id:'f2', name:'2 · The Vault', tag:'Mission 4 · ~6 min · tension ▆',
+  goal:'<b>Open the vault together and take the main prize.</b> A room inside the room: a steel vault fills the NW of the floor, and its round door faces you as you step out of the lift. Opening it needs both code fragments, a simultaneous key turn and a dial cracked by two players.',
+  beats:['Cold white light, steel','Silence, then heartbeat','Music rises when the door swings'],
+  floor:'#171b20', anchor:'PRIZE', liftNote:'',
+  zones:[
+    {x:0,y:0,w:3.6,h:3.6,fill:'rgba(179,136,255,.08)',label:'VAULT',lx:0.15,ly:0.6,tc:'#c9b2ff'},
+    {x:3.6,y:2.0,w:2.4,h:4.0,fill:'rgba(255,255,255,.02)',label:'ANTECHAMBER',lx:3.75,ly:5.0,tc:'#9aa3b5'},
+  ],
+  walls:[
+    {x:3.35,y:0,w:0.25,h:2.0},{x:3.35,y:3.2,w:0.25,h:0.4},{x:0,y:3.35,w:3.6,h:0.25}
+  ],
+  doors:[{x1:3.47,y1:2.0,x2:3.47,y2:3.2,label:'round vault door',lx:3.25,ly:2.6,rot:-90}],
+  objs:[{x:0.08,y:0.9,w:0.35,h:1.8,fill:'#2e3644',stroke:'#7a869e',label:''}],
+  vistas:[{x1:0,y1:0.35,x2:3.3,y2:0.35,label:'vault depth: shelves fade into darkness',lx:1.7,ly:0.25}],
+  links:[[5.75,5.2,0.35,5.6,'turn together < 0.5 s'],[3.75,2.6,3.0,5.7,'']],
+  paths:[
+    {pts:[[5.0,2.3],[5.5,2.85]]},
+    {alt:true,pts:[[5.2,3.2],[5.4,4.9]]},{alt:true,pts:[[4.8,3.3],[0.8,5.3]]},
+    {pts:[[4.3,2.7],[2.7,2.6],[2.1,2.1]]}
+  ],
+  keys:[
+    {x:3.8,y:2.6,c:'coop',t:'Vault door + dial lock',d:'Player A turns the dial with a hand-tracked twist. They cannot see whether a tumbler has clicked; only the terminal (5) can.'},
+    {x:5.75,y:5.2,c:'coop',t:'Key switch K1',d:'One of two key switches 5.4 m apart. Both must turn within 0.5 s of each other ("on three!"). It has to be two players.'},
+    {x:0.35,y:5.6,c:'coop',t:'Key switch K2',d:'Placed in the far corner to make players use the full width of the room.'},
+    {x:5.75,y:2.85,c:'int',t:'Fragment keypad',d:'Enter fragment #1 (from G) and #2 (from the egg). This arms the key switches.'},
+    {x:3.0,y:5.7,c:'coop',t:'Tumbler terminal',d:'Shows the dial\'s pin graph. Player B calls out "warmer / colder / CLICK" while Player A turns the dial. Asymmetric information.'},
+    {x:1.8,y:1.8,c:'story',t:'The prize (anchor pedestal)',d:'On a weight sensor. Lift it without putting down the amphora or statue from floor 1 and the alarm triggers at once; with the swap, the crew gets 20 s of quiet. Either way, the alarm goes off.'},
+    {x:0.25,y:2.85,c:'int',t:'Deposit boxes (bonus loot)',d:'A wall of small drawers to pull open. Optional greed: every second spent here is time the guards gain on the rooftop.'},
+  ]
+},
+{
+  id:'roof', name:'R · Rooftop Getaway', tag:'Finale · alarm on · tension █',
+  goal:'<b>Rig the zipline and get off the roof before the guards break through.</b> The lift opens onto the open air. One player has to hold the stairwell door while the others prepare the escape. Everyone must grab the zipline together to leave.',
+  beats:['Wind, sirens, police searchlight','Door being hammered from the stairwell','City lights 30 storeys down'],
+  floor:'#141a22', anchor:'CRATE', liftNote:'exits as stair housing',
+  zones:[
+    {x:2.8,y:3.4,w:1.4,h:1.4,fill:'rgba(127,223,255,.16)',stroke:'#7fdfff',label:'GLASS',lx:3.05,ly:4.15,tc:'#7fdfff'},
+    {x:0,y:4.6,w:1.6,h:1.4,fill:'rgba(89,217,142,.10)',stroke:'#59d98e',label:'ZIPLINE',lx:0.12,ly:4.86,tc:'#8be6b0'},
+  ],
+  objs:[{x:4.4,y:5.0,w:1.0,h:0.7,fill:'#2e3644',stroke:'#7a869e',label:'AC unit'},{x:0.4,y:2.9,w:0.7,h:0.9,fill:'#2e3644',stroke:'#7a869e',label:'vent'}],
+  polys:[{pts:[[3.1,0.4],[1.6,3.2],[4.6,3.2]],fill:'rgba(255,59,79,.08)',stroke:'rgba(255,59,79,.4)',label:'searchlight',lx:2.7,ly:2.95,tc:'#ff8a96'}],
+  vistas:[
+    {x1:0,y1:0,x2:4.0,y2:0,label:'skyline · neighbouring towers',lx:2.0,ly:-0.1},
+    {x1:0,y1:0,x2:0,y2:6,label:'30-storey drop · parapet 1 m',lx:-0.08,ly:3.0,vert:true,rot:-90},
+    {x1:0,y1:6,x2:6,y2:6},
+  ],
+  doors:[{x1:6,y1:3.0,x2:6,y2:4.1,label:'stairwell',lx:6.15,ly:3.55,rot:90}],
+  links:[[5.5,3.55,0.6,5.3,'']],
+  paths:[
+    {pts:[[5.0,2.3],[2.6,2.0],[2.15,1.85]]},
+    {alt:true,pts:[[4.6,2.4],[5.5,3.4]]},
+    {pts:[[1.9,2.3],[1.3,4.0],[0.85,5.0]]}
+  ],
+  keys:[
+    {x:1.8,y:1.8,c:'int',t:'Supply crate (anchor prop)',d:'Pry the lid open with the crowbar from B1. Inside: the zipline launcher and harness clips.'},
+    {x:5.5,y:3.55,c:'coop',t:'Stairwell door: hold the bar',d:'Guards are pushing from the other side. One player must keep both hands on the barricade bar, and the door shudders whenever they ease off. The number of alarm strikes sets how hard the guards push.'},
+    {x:0.55,y:5.45,c:'int',t:'Zipline launcher',d:'Aim at the neighbouring roof and fire. The cable stretches off into the night, beyond the room\'s boundary.'},
+    {x:1.05,y:5.2,c:'coop',t:'Zipline handles: all grab',d:'Every player grabs within 3 s, including the door holder, who has to run across (a final dash across the full diagonal of the room). The world slides away and the ending score appears: loot, time, strikes.'},
+    {x:3.5,y:4.6,c:'story',t:'Glass skylight',d:'Walkable glass looking down into the treasure hall, now swarming with guards. Links the floors vertically and is good for a moment of vertigo.'},
+    {x:3.1,y:1.0,c:'haz',t:'Police searchlight',d:'Sweeps the roof. Getting caught adds 5 s to the door-hold timer. Hide behind the crate or the vents.'},
+    {x:1.3,y:0.25,c:'story',t:'Skyline + parapet',d:'The 1 m parapet sits exactly on the room boundary, so the drop is always on the far side of where players can walk. The whole city is your "space" here: the cheapest way to make the room feel huge.'},
+  ]
+}
+];
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const CAT = {int:'#e8b04a', coop:'#4fc3f7', haz:'#ff3b4f', story:'#b388ff'};
+const ACCENT = {b1:'#4fc3f7', g:'#ff3b4f', f1:'#e8b04a', f2:'#b388ff', roof:'#59d98e'};
+const SHORT = {b1:'B1', g:'G', f1:'1', f2:'2', roof:'R'};
+const H = 2.8;               // storey height of walls
+
+// ---------- renderer / scene ----------
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+const labelRenderer = new CSS2DRenderer({element:document.getElementById('labels')});
+labelRenderer.setSize(innerWidth, innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0d0f14, 40, 90);
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.05, 300);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI*0.98;
+
+scene.add(new THREE.HemisphereLight(0xdfe7ff, 0x1a1d24, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(10, 30, 14); sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-12,right:12,top:12,bottom:-12,near:1,far:80});
+scene.add(sun); scene.add(sun.target);
+
+// ---------- materials ----------
+const M = {
+  slab: new THREE.MeshStandardMaterial({color:0x6c717b, roughness:.95}),
+  slabSide: new THREE.MeshStandardMaterial({color:0x3b404a, roughness:1}),
+  wall: new THREE.MeshStandardMaterial({color:0xb7bcc6, roughness:.9}),
+  wallGhost: new THREE.MeshStandardMaterial({color:0xaeb4c0, roughness:.9, transparent:true, opacity:.18, depthWrite:false, side:THREE.DoubleSide}),
+  obj: new THREE.MeshStandardMaterial({color:0x9aa0ab, roughness:.85}),
+  glass: new THREE.MeshStandardMaterial({color:0xbfe9ff, roughness:.1, transparent:true, opacity:.28, depthWrite:false}),
+  anchor: new THREE.MeshStandardMaterial({color:0xb8913f, roughness:.6, metalness:.2}),
+  laser: new THREE.MeshBasicMaterial({color:0xff2440}),
+  laserGlow: new THREE.MeshBasicMaterial({color:0xff2440, transparent:true, opacity:.22, depthWrite:false}),
+  sweep: new THREE.MeshBasicMaterial({color:0xff2440, transparent:true, opacity:.28, side:THREE.DoubleSide, depthWrite:false}),
+  vista: new THREE.MeshBasicMaterial({color:0x7fdfff, transparent:true, opacity:.22, side:THREE.DoubleSide, depthWrite:false}),
+  door: new THREE.MeshStandardMaterial({color:0xff9a3c, roughness:.6, emissive:0x40200a}),
+  lift: new THREE.MeshStandardMaterial({color:0x59d98e, roughness:.4, transparent:true, opacity:.22, depthWrite:false, side:THREE.DoubleSide}),
+  liftFrame: new THREE.MeshStandardMaterial({color:0x59d98e, emissive:0x1d5a35, roughness:.4}),
+  person: new THREE.MeshStandardMaterial({color:0x8fb3ff, roughness:.6}),
+  cutter: new THREE.MeshBasicMaterial({color:0xffffff}),
+};
+
+// ---------- helpers ----------
+const W = v => v - 3;   // plan metres -> world (centred)
+function parseColor(str){
+  const m = str.match(/rgba?\(([^)]+)\)/);
+  if(!m) return {c:new THREE.Color(str), a:1};
+  const p = m[1].split(',').map(Number);
+  return {c:new THREE.Color(p[0]/255,p[1]/255,p[2]/255), a:p[3]===undefined?1:p[3]};
+}
+function box(g, x, y, w, d, y0, h, mat, shadow=true){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(w,.01), Math.max(h,.01), Math.max(d,.01)), mat);
+  m.position.set(W(x+w/2), y0+h/2, W(y+d/2));
+  m.castShadow = shadow; m.receiveShadow = true;
+  g.add(m); return m;
+}
+function beam(g, x1, y1, x2, y2, h, r=.012){
+  const a = new THREE.Vector3(W(x1),h,W(y1)), b = new THREE.Vector3(W(x2),h,W(y2));
+  const len = a.distanceTo(b), mid = a.clone().add(b).multiplyScalar(.5);
+  const grp = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,8), M.laser);
+  const glow = new THREE.Mesh(new THREE.CylinderGeometry(r*4,r*4,len,10), M.laserGlow);
+  grp.add(core, glow);
+  grp.position.copy(mid);
+  grp.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), b.clone().sub(a).normalize());
+  g.add(grp); return grp;
+}
+function flatShape(g, pts, color, opacity, y=.02){
+  const s = new THREE.Shape(pts.map(p=>new THREE.Vector2(W(p[0]), -W(p[1]))));
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(s), new THREE.MeshBasicMaterial({color, transparent:true, opacity, depthWrite:false, side:THREE.DoubleSide}));
+  mesh.rotation.x = -Math.PI/2; mesh.position.y = y; g.add(mesh); return mesh;
+}
+function dashed(g, pts, color, dash, gap, y, opacity=.9){
+  const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p=>new THREE.Vector3(W(p[0]), p[2]!==undefined?p[2]:y, W(p[1]))));
+  const line = new THREE.Line(geo, new THREE.LineDashedMaterial({color, dashSize:dash, gapSize:gap, transparent:true, opacity}));
+  line.computeLineDistances(); g.add(line); return line;
+}
+function label(g, cls, html, x, h, y, color){
+  const el = document.createElement('div'); el.className = cls; el.innerHTML = html;
+  if(color){ el.style.borderColor = color; el.style.color = color; }
+  const o = new CSS2DObject(el); o.position.set(W(x), h, W(y)); g.add(o); return o;
+}
+function arrowHead(g, from, to, color, y){
+  const dir = new THREE.Vector3(W(to[0])-W(from[0]),0,W(to[1])-W(from[1])).normalize();
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(.07,.2,10), new THREE.MeshBasicMaterial({color}));
+  cone.position.set(W(to[0]), y, W(to[1]));
+  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+  g.add(cone);
+}
+function person(g, x, y, color=M.person){
+  const p = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.2,1.05,4,12), color);
+  body.position.y = .2+1.05/2; body.castShadow = true;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.13,16,12), color);
+  head.position.y = 1.62; head.castShadow = true;
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(.2,.08,.1), new THREE.MeshStandardMaterial({color:0x111111}));
+  visor.position.set(0,1.64,.11);
+  p.add(body, head, visor);
+  p.position.set(W(x), 0, W(y));
+  g.add(p); return p;
+}
+
+// ---------- build floors ----------
+const floorRecs = [];
+const anim = { sweeps:[], cones:[], pulses:[] };
+
+floors.forEach((f, idx)=>{
+  const g = new THREE.Group(); g.name = f.id;
+  const layers = { pins:new THREE.Group(), zones:new THREE.Group(), paths:new THREE.Group(), tallWalls:new THREE.Group(), lowWalls:new THREE.Group(), people:new THREE.Group() };
+  Object.values(layers).forEach(l=>g.add(l));
+  const accent = new THREE.Color(ACCENT[f.id]);
+  const isRoof = f.id==='roof';
+
+  // slab
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(6.0, .16, 6.0), [M.slabSide,M.slabSide,M.slab,M.slabSide,M.slabSide,M.slabSide]);
+  slab.position.y = -.08; slab.receiveShadow = true; g.add(slab);
+  // accent rim
+  const rim = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(6.02,.17,6.02)), new THREE.LineBasicMaterial({color:accent}));
+  rim.position.y = -.08; g.add(rim);
+  // 1 m grid
+  const gpts=[]; for(let i=1;i<6;i++){ gpts.push(W(i),.005,W(0), W(i),.005,W(6), W(0),.005,W(i), W(6),.005,W(i)); }
+  const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(gpts,3));
+  g.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.10})));
+  // safety margin
+  dashed(g, [[.4,.4],[5.6,.4],[5.6,5.6],[.4,5.6],[.4,.4]], 0xffffff, .12, .16, .012, .35);
+
+  // outer walls: low curb + tall ghost (or 1 m parapet on roof)
+  const wallH = isRoof ? 1.0 : H, t=.08;
+  [[0,-t,6,t],[0,6,6,t],[-t,0,t,6],[6,0,t,6]].forEach(r=>{
+    box(layers.lowWalls, r[0],r[1],r[2],r[3], 0, isRoof?1.0:.25, isRoof?M.wall:M.wall);
+    if(!isRoof) box(layers.tallWalls, r[0],r[1],r[2],r[3], 0, wallH, M.wallGhost, false);
+  });
+
+  // zones (floor decals)
+  (f.zones||[]).forEach(z=>{
+    const {c,a} = parseColor(z.fill);
+    flatShape(g, [[z.x,z.y],[z.x+z.w,z.y],[z.x+z.w,z.y+z.h],[z.x,z.y+z.h]], c, Math.min(.55,a*3.2), .015);
+    if(z.stroke) dashed(g, [[z.x,z.y],[z.x+z.w,z.y],[z.x+z.w,z.y+z.h],[z.x,z.y+z.h],[z.x,z.y]], new THREE.Color(z.stroke), .1,.08,.02,.8);
+    if(z.label){
+      const glass = /GLASS/.test(z.label);
+      if(glass) box(g, z.x, z.y, z.w, z.h, 0, .03, M.glass, false);
+      label(layers.zones,'zlabel', z.label.replace(' →',''), z.x+z.w/2, .08, z.y+z.h/2);
+    }
+  });
+  // hatch (laser zones) -> faint red floor
+  (f.hatch||[]).forEach(z=> flatShape(g, [[z.x,z.y],[z.x+z.w,z.y],[z.x+z.w,z.y+z.h],[z.x,z.y+z.h]], 0xff3b4f, .12, .013));
+  // light cones
+  (f.polys||[]).forEach(p=>{
+    const red = /search/.test(p.label||'');
+    const m = flatShape(g, p.pts, red?0xff3b4f:0xfff1b0, red?.22:.20, .025);
+    anim.cones.push({mesh:m, base:red?.22:.20, speed:red?1.3:.8, idx});
+    if(p.label) label(layers.zones,'zlabel', p.label, p.lx, .1, p.ly);
+  });
+
+  // walls
+  (f.walls||[]).forEach(w=>{
+    const crate = /crate/.test(w.label||'');
+    box(g, w.x, w.y, w.w, w.h, 0, crate?1.9:H*.86, crate?M.obj:M.wall);
+    if(crate) for(let k=0;k<3;k++) box(g, w.x-.02, w.y+.1+k*.85, w.w+.04, .7, 1.9, .35+((k%2)*.25), M.obj);
+  });
+
+  // glass windows: low wall + glass + lintel, matching partition height
+  (f.windows||[]).forEach(w=>{
+    const top = H*.86;
+    box(g, w.x, w.y, w.w, w.h, 0, .9, M.wall);
+    box(g, w.x+.02, w.y+.02, Math.max(w.w-.04,.04), Math.max(w.h-.04,.04), .9, top-.9-.12, M.glass, false);
+    box(g, w.x, w.y, w.w, w.h, top-.12, .12, M.wall);
+  });
+  // spot-lit sculpture court on G
+  if(f.id==='g'){
+    const spot = new THREE.SpotLight(0xffe2a8, 18, 6, Math.PI/5, .5, 1.5);
+    spot.position.set(W(1.8), 2.6, W(1.8)); spot.target.position.set(W(1.8), 0, W(1.8));
+    g.add(spot, spot.target);
+    const halo = new THREE.Mesh(new THREE.CircleGeometry(.9,40), new THREE.MeshBasicMaterial({color:0xffe2a8, transparent:true, opacity:.18, depthWrite:false}));
+    halo.rotation.x = -Math.PI/2; halo.position.set(W(1.8), .02, W(1.8)); g.add(halo);
+    label(layers.zones,'zlabel','SCULPTURE COURT', 2.4, .1, 3.3);
+  }
+  // objects
+  (f.objs||[]).forEach(o=>{
+    const lbl = o.label||'';
+    let y0=0, h=1.0;
+    if(o.h<=.16 || o.w<=.16){ y0=1.15; h=.85; }             // wall-hung painting
+    else if(/AC/.test(lbl)) h=1.2;
+    else if(/vent/.test(lbl)) h=.8;
+    else if(o.w<=.4 && o.h>=1.5) h=2.0;                     // deposit box wall
+    else if(o.w<=.45 && o.h<=.65) { y0=.8; h=.8; }          // fuse box on console
+    const mesh = box(g, o.x, o.y, o.w, o.h, y0, h, M.obj);
+    if(/^(W\d|S\d|coins)$/.test(lbl)){
+      mesh.scale.y = .9/h; mesh.position.y = .45;
+      box(g, o.x+.03, o.y+.03, o.w-.06, o.h-.06, .9, .4, M.glass, false);
+    }
+    if(lbl) label(layers.zones,'zlabel', lbl, o.x+o.w/2, (y0+h)+.15, o.y+o.h/2);
+  });
+
+  // anchor plinth
+  if(f.anchor){
+    box(g, 1.5,1.5,.6,.6, 0, .9, M.anchor);
+    if(f.id==='f1'||f.id==='f2') box(g, 1.55,1.55,.5,.5, .9, .45, M.glass, false);
+    if(f.id==='g'){ const s = new THREE.Mesh(new THREE.TorusKnotGeometry(.16,.05,80,10), M.anchor); s.position.set(W(1.8),1.2,W(1.8)); s.castShadow=true; g.add(s); anim.pulses.push({mesh:s, spin:true}); }
+    if(typeof f.anchor==='string') label(layers.zones,'zlabel', f.anchor, 1.8, 1.55, 1.8);
+  }
+
+  // vistas (view-only panels on the boundary)
+  (f.vistas||[]).forEach(v=>{
+    const vh = isRoof?1.0:H, off=.12;
+    const horiz = v.y1===v.y2;
+    const len = horiz?Math.abs(v.x2-v.x1):Math.abs(v.y2-v.y1);
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(len, vh), M.vista);
+    const outY = v.y1<=0 ? -off : v.y1>=6 ? off : 0;
+    const outX = v.x1<=0 ? -off : v.x1>=6 ? off : 0;
+    if(horiz){ plane.position.set(W((v.x1+v.x2)/2), vh/2+.02, W(v.y1)+outY); }
+    else { plane.position.set(W(v.x1)+outX, vh/2+.02, W((v.y1+v.y2)/2)); plane.rotation.y = Math.PI/2; }
+    g.add(plane);
+    if(v.label){
+      const lx = horiz?(v.x1+v.x2)/2 : v.x1 + (outX<0?-.35:.35);
+      const ly = horiz? v.y1 + (outY<0?-.35:.35) : (v.y1+v.y2)/2;
+      label(layers.zones,'vlabel', v.label, lx, vh+.25, ly);
+    }
+  });
+
+  // doors (vault door / stairwell)
+  (f.doors||[]).forEach(d=>{
+    const vertical = d.x1===d.x2;
+    if(vertical) box(g, d.x1-.07, d.y1, .14, d.y2-d.y1, 0, 2.2, M.door);
+    else box(g, d.x1, d.y1-.07, d.x2-d.x1, .14, 0, 2.2, M.door);
+    if(/vault/.test(d.label||'')){
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.62,.07,12,40), M.door);
+      ring.position.set(W(d.x1)+.1, 1.15, W((d.y1+d.y2)/2)); ring.rotation.y = Math.PI/2; g.add(ring);
+    }
+    if(d.label) label(layers.zones,'zlabel', d.label, vertical?d.x1+(d.x1>=6?.35:-.4):(d.x1+d.x2)/2, 2.45, vertical?(d.y1+d.y2)/2:d.y1);
+  });
+
+  // lasers
+  (f.lasers||[]).forEach(l=>{
+    if(l.type==='low'){ [.12,.22,.32].forEach(h=>beam(g,l.x1,l.y1,l.x2,l.y2,h)); }
+    else if(l.type==='high'){ [1.0,1.2].forEach(h=>beam(g,l.x1,l.y1,l.x2,l.y2,h)); }
+    else if(l.type==='grid'){ for(let h=.2;h<=1.95;h+=.25) beam(g,l.x1,l.y1,l.x2,l.y2,h,.009); }
+    else if(l.type==='sweep'){
+      const len = Math.abs(l.y2-l.y1);
+      const sw = (f.sweeps||[])[0] || {x1:l.x1-.5,x2:l.x1+.5};
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(len, 2.1), M.sweep);
+      plane.rotation.y = Math.PI/2; plane.position.set(W(l.x1), 1.05, W((l.y1+l.y2)/2));
+      g.add(plane);
+      const edge = beam(g, l.x1, l.y1, l.x1, l.y2, 2.1, .015);
+      anim.sweeps.push({items:[plane,edge], a:W(sw.x1), b:W(sw.x2), idx});
+    }
+    if(l.label) label(layers.zones,'zlabel', l.label, l.lx, .55, l.ly);
+  });
+
+  // spawn rings
+  (f.spawns||[]).forEach((s,i)=>{
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.18,.24,32), new THREE.MeshBasicMaterial({color:0x4fc3f7, side:THREE.DoubleSide}));
+    ring.rotation.x = -Math.PI/2; ring.position.set(W(s[0]),.02,W(s[1])); g.add(ring);
+    label(layers.zones,'zlabel', 'P'+(i+1), s[0], .1, s[1]);
+  });
+
+  // routes and co-op links
+  (f.paths||[]).forEach(p=>{
+    const col = p.alt?0x4fc3f7:0xffffff;
+    dashed(layers.paths, p.pts, col, p.alt?.18:.06, p.alt?.12:.12, .05, .95);
+    arrowHead(layers.paths, p.pts[p.pts.length-2], p.pts[p.pts.length-1], col, .05);
+  });
+  (f.links||[]).forEach(l=>{
+    dashed(layers.paths, [[l[0],l[1],1.3],[l[2],l[3],1.3]], 0x4fc3f7, .06, .1, 1.3, .9);
+    if(l[4]) label(layers.zones,'vlabel', l[4], (l[0]+l[2])/2, 1.5, (l[1]+l[3])/2);
+  });
+
+  // lift car (NE 2x2, door on south face x 4.4-5.6)
+  const lift = new THREE.Group(); g.add(lift);
+  box(lift, 4.0, 0, .05, 2.0, 0, 2.6, M.lift, false);           // west wall
+  box(lift, 4.0, 0, 2.0, .05, 0, 2.6, M.lift, false);           // north wall (glass so you can see inside)
+  box(lift, 5.95,0, .05, 2.0, 0, 2.6, M.lift, false);           // east wall
+  box(lift, 4.0, 1.95, .4, .05, 0, 2.6, M.lift, false);         // south wall left of door
+  box(lift, 5.6, 1.95, .4, .05, 0, 2.6, M.lift, false);         // south wall right of door
+  box(lift, 4.4, 1.95, 1.2, .05, 2.2, .4, M.lift, false);       // lintel
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2,2.6,2)), new THREE.LineBasicMaterial({color:0x59d98e}));
+  edges.position.set(W(5),1.3,W(1)); lift.add(edges);
+  box(lift, 4.38, 1.9, .06, .14, 0, 2.2, M.liftFrame); box(lift, 5.56, 1.9, .06, .14, 0, 2.2, M.liftFrame);
+  box(lift, 5.86, .75, .08, .5, 1.0, .5, M.liftFrame);          // floor panel
+  if(!isRoof) box(lift, 4.0, 0, 2.0, 2.0, 2.6, .05, M.lift, false);
+  label(layers.zones,'zlabel', 'LIFT' + (f.liftNote?' · '+f.liftNote:''), 5, 2.85, 1);
+
+  // people for scale
+  if(f.id==='b1'){ person(layers.people, 0.8, 4.4); person(layers.people, 1.8, 4.4, new THREE.MeshStandardMaterial({color:0xffb3c7, roughness:.6})); }
+  else if(f.id==='g'){ person(layers.people, 4.6, 4.9); }
+  else if(f.id==='f1'){ person(layers.people, 2.6, 4.9); person(layers.people, 3.5, 4.9, new THREE.MeshStandardMaterial({color:0xffb3c7, roughness:.6})); }
+  else if(f.id==='f2'){ person(layers.people, 3.95, 2.6); }
+  else if(f.id==='roof'){ person(layers.people, 5.45, 3.55); }
+
+  // numbered pins
+  const pins=[];
+  (f.keys||[]).forEach((k,i)=>{
+    const col = CAT[k.c];
+    const ph = 2.05;
+    const stem = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(W(k.x),.02,W(k.y)), new THREE.Vector3(W(k.x),ph-.12,W(k.y))]), new THREE.LineBasicMaterial({color:col, transparent:true, opacity:.75}));
+    layers.pins.add(stem);
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(.12,20), new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:.55}));
+    dot.rotation.x=-Math.PI/2; dot.position.set(W(k.x),.03,W(k.y)); layers.pins.add(dot);
+    const el = document.createElement('div'); el.className='pin'; el.style.background=col; el.textContent=i+1;
+    el.title = k.t;
+    el.addEventListener('click', ev=>{ ev.stopPropagation(); showInfo(idx,i); });
+    const o = new CSS2DObject(el); o.position.set(W(k.x), ph, W(k.y)); layers.pins.add(o);
+    pins.push(el);
+  });
+
+  // floor title
+  const ft = label(g,'flabel', `${SHORT[f.id]} · ${f.name.split('·')[1].trim()}`, -0.35, .2, 6.45, ACCENT[f.id]);
+  ft.element.addEventListener('click', ()=>setView(idx));
+
+  scene.add(g);
+  floorRecs.push({f, g, layers, pins});
+});
+
+// lift shaft through the stack
+const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.04, 1, 2.04), new THREE.MeshBasicMaterial({color:0x59d98e, transparent:true, opacity:.06, depthWrite:false}));
+const shaftEdges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.04,1,2.04)), new THREE.LineDashedMaterial({color:0x59d98e, dashSize:.2, gapSize:.15}));
+scene.add(shaft, shaftEdges);
+
+// ---------- state / layout ----------
+let view = -1;            // -1 = all floors
+let spacing = 0;
+const targetPos = new THREE.Vector3(), targetLook = new THREE.Vector3();
+let camAnim = 0;
+
+function spacingFromSlider(){ const v = +document.getElementById('explode').value; return 3.0 + v*7.0; }
+function layout(){
+  spacing = spacingFromSlider();
+  floorRecs.forEach((r,i)=>{
+    r.g.position.y = i*spacing;
+    r.g.visible = (view===-1 || view===i);
+  });
+  const top = (floorRecs.length-1)*spacing + 2.6;
+  shaft.scale.y = top; shaft.position.set(W(5), top/2, W(1));
+  shaftEdges.scale.y = top; shaftEdges.position.copy(shaft.position); shaftEdges.computeLineDistances();
+  shaft.visible = shaftEdges.visible = (view===-1);
+}
+function stackCenterY(){ return view===-1 ? ((floorRecs.length-1)*spacing)/2 + 1 : view*spacing + 1; }
+
+function camPreset(kind){
+  const cy = stackCenterY();
+  const single = view!==-1;
+  const fov = camera.fov*Math.PI/180;
+  const stackH = 4*spacing + 6;
+  const d = single ? 11 : Math.max(16, (stackH/2)/Math.tan(fov/2)*1.2);
+  const look = new THREE.Vector3(0, cy, 0);
+  let pos;
+  if(kind==='top') pos = new THREE.Vector3(0, cy + (single?12:d*1.1), 0.25);
+  else if(kind==='front') pos = new THREE.Vector3(0, cy + (single?3:2), d);
+  else if(kind==='side') pos = new THREE.Vector3(d, cy + (single?3:2), 0);
+  else if(kind==='player'){
+    const fy = (single?view:0)*spacing;
+    pos = new THREE.Vector3(W(5), fy+1.65, W(2.4)); look.set(W(0.6), fy+1.0, W(3.0));
+  }
+  else pos = new THREE.Vector3(.62, .42, .78).normalize().multiplyScalar(d).add(new THREE.Vector3(0,cy,0));
+  targetPos.copy(pos); targetLook.copy(look); camAnim = 1;
+  document.querySelectorAll('[data-cam]').forEach(b=>b.classList.toggle('on', b.dataset.cam===kind));
+}
+
+// ---------- UI ----------
+const vb = document.getElementById('viewBtns');
+const allBtn = document.createElement('button'); allBtn.textContent='All floors'; allBtn.onclick=()=>setView(-1); vb.appendChild(allBtn);
+floorRecs.forEach((r,i)=>{ const b=document.createElement('button'); b.textContent=SHORT[r.f.id]; b.title=r.f.name; b.style.borderLeft=`3px solid ${ACCENT[r.f.id]}`; b.onclick=()=>setView(i); vb.appendChild(b); });
+
+function setView(i){
+  view = i;
+  [...vb.children].forEach((b,k)=>b.classList.toggle('on', k===i+1));
+  layout(); camPreset(i===-1?'iso':'iso');
+  const fi = document.getElementById('floorInfo');
+  if(i===-1){ fi.style.display='none'; }
+  else{
+    const f = floorRecs[i].f;
+    fi.style.display='block';
+    document.getElementById('floorTag').textContent = f.name + ' · ' + f.tag;
+    document.getElementById('goal').innerHTML = f.goal;
+    const kl = document.getElementById('keylist'); kl.innerHTML='';
+    f.keys.forEach((k,n)=>{ const li=document.createElement('li'); li.innerHTML=`<span class="dot" style="background:${CAT[k.c]}">${n+1}</span><span>${k.t.replace(/</g,'&lt;')}</span>`; li.onclick=()=>showInfo(i,n); kl.appendChild(li); });
+  }
+  hideInfo();
+}
+let selPin=null;
+function showInfo(fi, ki){
+  const r = floorRecs[fi], k = r.f.keys[ki];
+  document.getElementById('infoFloor').textContent = r.f.name;
+  document.getElementById('infoT').innerHTML = `<span class="dot" style="background:${CAT[k.c]}">${ki+1}</span>${k.t.replace(/</g,'&lt;')}`;
+  document.getElementById('infoD').textContent = k.d;
+  document.getElementById('info').style.display='block';
+  if(selPin) selPin.classList.remove('sel');
+  selPin = r.pins[ki]; selPin.classList.add('sel');
+}
+function hideInfo(){ document.getElementById('info').style.display='none'; if(selPin) selPin.classList.remove('sel'); selPin=null; }
+document.getElementById('infoX').onclick = hideInfo;
+document.getElementById('explode').oninput = ()=>{ layout(); controls.target.y = stackCenterY(); };
+document.querySelectorAll('[data-cam]').forEach(b=> b.onclick=()=>camPreset(b.dataset.cam));
+const vis = (key, prop)=> document.getElementById(key).onchange = e => floorRecs.forEach(r=>{ r.layers[prop].visible = e.target.checked; if(prop==='tallWalls') r.layers.lowWalls.visible = true; });
+vis('tPins','pins'); vis('tZones','zones'); vis('tPaths','paths'); vis('tWalls','tallWalls'); vis('tPeople','people');
+floorRecs.forEach(r=> r.layers.tallWalls.visible = false);
+addEventListener('keydown', e=>{
+  if(e.key==='0') setView(-1);
+  const n = parseInt(e.key); if(n>=1 && n<=5) setView(n-1);
+  if(e.key==='Escape') hideInfo();
+});
+
+// CSS2D labels only check their own visibility, so propagate parent visibility
+const cssObjs = []; scene.traverse(o=>{ if(o.isCSS2DObject) cssObjs.push(o); });
+function syncLabels(){
+  cssObjs.forEach(o=>{
+    let v = true, p = o.parent;
+    while(p){ if(!p.visible){ v=false; break; } p = p.parent; }
+    o.visible = v;
+  });
+}
+// ---------- loop ----------
+const clock = new THREE.Clock();
+function tick(){
+  const t = performance.now()/1000;
+  if(document.getElementById('tAnim').checked){
+    anim.sweeps.forEach(s=>{ const k = (Math.sin(t*0.9)+1)/2; const x = s.a + (s.b-s.a)*k; s.items.forEach(it=>it.position.x = x); });
+    anim.cones.forEach(c=>{ c.mesh.material.opacity = c.base*(0.45+0.55*Math.max(0,Math.sin(t*c.speed))); });
+    anim.pulses.forEach(p=>{ if(p.spin) p.mesh.rotation.y = t*.6; });
+    M.laserGlow.opacity = .16 + .1*Math.sin(t*6);
+  }
+  const dt = Math.min(clock.getDelta(), .1);
+  if(camAnim>0){
+    const k = 1 - Math.pow(0.0015, dt);
+    camera.position.lerp(targetPos, k); controls.target.lerp(targetLook, k);
+    camAnim += dt;
+    if(camera.position.distanceTo(targetPos)<.02 || camAnim>2.2){ camera.position.copy(targetPos); controls.target.copy(targetLook); camAnim=0; }
+  }
+  controls.update();
+  syncLabels();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); labelRenderer.setSize(innerWidth,innerHeight); });
+controls.addEventListener('start', ()=>{ camAnim=0; document.querySelectorAll('[data-cam]').forEach(b=>b.classList.remove('on')); });
+
+layout();
+setView(-1);
+camera.position.copy(targetPos); controls.target.copy(targetLook);
+tick();
+</script>
+</body>
+</html>

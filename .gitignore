@@ -1,0 +1,52 @@
+# --- OS files ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Editors / IDEs ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# --- Node / local tooling (only used for local testing, not needed by the site) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# --- Python helpers (screenshot / test scripts) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# --- Scratch, exports and screenshots ---
+*.tmp
+*.bak
+*.log
+tmp/
+scratch/
+screenshots/
+shot_*.png
+
+# --- Large source files that belong in the Unreal (GitLab) repo, not on this site ---
+*.uasset
+*.umap
+*.fbx
+*.blend
+*.blend1
+*.apk
+
+# --- Secrets ---
+.env
+.env.*
